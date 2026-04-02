@@ -6,7 +6,8 @@ One-time CLI migration tool: export Granola meetings to Minutes-native markdown.
 
 ```bash
 pnpm build                    # compile TypeScript
-node dist/index.js export     # run full export to ~/meetings/
+pnpm check                    # lint with Biome
+node dist/cli.js export       # run full export to ~/meetings/
 ```
 
 ## Prerequisites
@@ -27,12 +28,15 @@ The converter transforms these into Minutes-native markdown with YAML frontmatte
 
 ## Key Files
 
-- `src/index.ts` — CLI entry point (commander)
-- `src/granola.ts` — shells out to granola-cli, parses JSON
+- `src/cli.ts` — thin CLI entry point (commander, process.exit handling)
+- `src/export.ts` — orchestration: `runExport(options)` function
+- `src/config.ts` — business rules and defaults (timezone, speaker map, LLM schema, slug constraints)
+- `src/granola.ts` — shells out to granola-cli, parses JSON, auth retry
 - `src/converter.ts` — core transformation: GranolaMeeting + transcript + enhanced -> Minutes markdown
-- `src/prosemirror.ts` — ProseMirror JSON -> Markdown converter (ported from granola-cli)
+- `src/prosemirror.ts` — ProseMirror JSON -> Markdown converter
 - `src/extractor.ts` — LLM extraction via `claude -p --json-schema`
 - `src/writer.ts` — atomic file writes with gray-matter
+- `src/utils.ts` — shared utilities (error handling, typed error classes)
 - `src/types.ts` — all TypeScript interfaces
 
 ## CLI Options
