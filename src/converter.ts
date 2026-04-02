@@ -1,4 +1,5 @@
-import { toMarkdown } from './prosemirror.js';
+import { SLUG, SOURCE_LABEL, SPEAKERS, TIMEZONE } from "./config.js";
+import { toMarkdown } from "./prosemirror.js";
 import type {
   GranolaMeeting,
   GranolaPerson,
@@ -7,7 +8,7 @@ import type {
   MinutesFrontmatter,
   ProseMirrorDoc,
   SpeakerAttribution,
-} from './types.js';
+} from "./types.js";
 
 export interface ConvertedMeeting {
   frontmatter: MinutesFrontmatter;
@@ -15,13 +16,21 @@ export interface ConvertedMeeting {
   slug: string;
 }
 
+/**
+ * Transform a Granola meeting into Minutes-native markdown format.
+ * @param meeting - Meeting metadata from `granola meeting list`
+ * @param transcript - Utterances from `granola meeting transcript`
+ * @param enhanced - AI summary from `granola meeting enhanced`
+ * @param insights - Structured extraction from Claude CLI (or null)
+ * @returns Frontmatter, markdown body, and filename slug
+ */
 export function convertMeeting(
   meeting: GranolaMeeting,
   transcript: GranolaUtterance[],
   enhanced: ProseMirrorDoc | null,
   insights: MeetingInsights | null,
 ): ConvertedMeeting {
-  const title = meeting.title || 'Untitled';
+  const title = meeting.title || "Untitled";
   const date = toLocalDate(meeting.created_at);
   const duration = calcDuration(meeting, transcript);
   const hasTranscript = transcript.length > 0;
@@ -30,19 +39,17 @@ export function convertMeeting(
   const creatorName = resolvePersonName(meeting.people?.creator);
   const allPeople = [...new Set([creatorName, ...attendeeNames].filter(Boolean))] as string[];
 
-  const status: MinutesFrontmatter['status'] = hasTranscript
-    ? 'complete'
-    : 'no-speech';
+  const status: MinutesFrontmatter["status"] = hasTranscript ? "complete" : "no-speech";
 
   const speakerMap = buildSpeakerMap(hasTranscript, creatorName);
   const calSummary = meeting.google_calendar_event?.summary;
 
   const frontmatter: MinutesFrontmatter = {
     title,
-    type: 'meeting',
+    type: "meeting",
     date,
     duration,
-    source: 'granola-reimport',
+    source: SOURCE_LABEL,
     status,
   };
 
@@ -62,20 +69,16 @@ export function convertMeeting(
 
 function toLocalDate(utcIso: string): string {
   const d = new Date(utcIso);
-  if (isNaN(d.getTime())) return utcIso;
-  const offset = 8 * 60;
-  const local = new Date(d.getTime() + offset * 60_000);
-  const pad = (n: number) => String(n).padStart(2, '0');
+  if (Number.isNaN(d.getTime())) return utcIso;
+  const local = new Date(d.getTime() + TIMEZONE.offsetMinutes * 60_000);
+  const pad = (n: number) => String(n).padStart(2, "0");
   return (
     `${local.getUTCFullYear()}-${pad(local.getUTCMonth() + 1)}-${pad(local.getUTCDate())}` +
-    `T${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}:${pad(local.getUTCSeconds())}+08:00`
+    `T${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}:${pad(local.getUTCSeconds())}${TIMEZONE.label}`
   );
 }
 
-function calcDuration(
-  meeting: GranolaMeeting,
-  transcript: GranolaUtterance[],
-): string {
+function calcDuration(meeting: GranolaMeeting, transcript: GranolaUtterance[]): string {
   const cal = meeting.google_calendar_event;
   if (cal?.start?.dateTime && cal?.end?.dateTime) {
     const start = new Date(cal.start.dateTime).getTime();
@@ -89,7 +92,7 @@ function calcDuration(
     return formatDuration(last - first);
   }
 
-  return '0m';
+  return "0m";
 }
 
 function formatDuration(ms: number): string {
@@ -102,38 +105,28 @@ function formatDuration(ms: number): string {
 
 function resolvePersonName(person?: GranolaPerson): string | null {
   if (!person) return null;
-  return (
-    person.details?.person?.name?.fullName ||
-    person.name ||
-    person.email ||
-    null
-  );
+  return person.details?.person?.name?.fullName || person.name || person.email || null;
 }
 
 function resolveAttendeeNames(attendees?: GranolaPerson[]): string[] {
   if (!attendees) return [];
-  return attendees
-    .map((a) => resolvePersonName(a))
-    .filter((n): n is string => n !== null);
+  return attendees.map((a) => resolvePersonName(a)).filter((n): n is string => n !== null);
 }
 
-function buildSpeakerMap(
-  hasTranscript: boolean,
-  creatorName: string | null,
-): SpeakerAttribution[] {
+function buildSpeakerMap(hasTranscript: boolean, creatorName: string | null): SpeakerAttribution[] {
   if (!hasTranscript) return [];
   return [
     {
-      speaker_label: 'SPEAKER_0',
-      name: creatorName || 'Local user',
-      confidence: 'high',
-      source: 'deterministic',
+      speaker_label: SPEAKERS.local.label,
+      name: creatorName || SPEAKERS.local.defaultName,
+      confidence: SPEAKERS.local.confidence,
+      source: SPEAKERS.local.source,
     },
     {
-      speaker_label: 'SPEAKER_1',
-      name: 'Remote participants',
-      confidence: 'low',
-      source: 'deterministic',
+      speaker_label: SPEAKERS.remote.label,
+      name: SPEAKERS.remote.defaultName,
+      confidence: SPEAKERS.remote.confidence,
+      source: SPEAKERS.remote.source,
     },
   ];
 }
@@ -159,7 +152,7 @@ function buildBody(
     sections.push(`## Transcript\n\n${formatTranscript(transcript)}`);
   }
 
-  return sections.join('\n\n');
+  return sections.join("\n\n");
 }
 
 function formatTranscript(utterances: GranolaUtterance[]): string {
@@ -167,12 +160,12 @@ function formatTranscript(utterances: GranolaUtterance[]): string {
 
   return utterances
     .map((u) => {
-      const speaker = u.source === 'microphone' ? 'SPEAKER_0' : 'SPEAKER_1';
+      const speaker = u.source === "microphone" ? SPEAKERS.local.label : SPEAKERS.remote.label;
       const relMs = new Date(u.start_timestamp).getTime() - baseTime;
       const ts = formatTimestamp(relMs);
       return `[${speaker} ${ts}] ${u.text}`;
     })
-    .join('\n');
+    .join("\n");
 }
 
 function formatTimestamp(ms: number): string {
@@ -180,7 +173,7 @@ function formatTimestamp(ms: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  const pad = (n: number) => String(n).padStart(2, '0');
+  const pad = (n: number) => String(n).padStart(2, "0");
 
   if (hours > 0) {
     return `${hours}:${pad(minutes)}:${pad(seconds)}`;
@@ -192,12 +185,12 @@ function buildSlug(date: string, title: string): string {
   const datePrefix = date.slice(0, 10);
   const titleSlug = title
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/[^a-z0-9\s]/g, "")
     .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 60)
-    .replace(/-$/, '');
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, SLUG.maxLength)
+    .replace(/-$/, "");
 
   return titleSlug ? `${datePrefix}-${titleSlug}.md` : `${datePrefix}-untitled.md`;
 }

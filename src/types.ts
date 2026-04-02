@@ -1,3 +1,14 @@
+// --- CLI options ---
+
+export interface ExportOptions {
+  outputDir: string;
+  dryRun: boolean;
+  skipLlm: boolean;
+  noteId?: string;
+  since?: string;
+  verbose: boolean;
+}
+
 // --- Granola CLI output types (from granola-cli/src/types.ts) ---
 
 export interface GranolaPeople {
@@ -16,7 +27,7 @@ export interface GranolaPerson {
 }
 
 export interface ProseMirrorDoc {
-  type: 'doc';
+  type: "doc";
   content: ProseMirrorNode[];
 }
 
@@ -29,7 +40,7 @@ export interface ProseMirrorNode {
 }
 
 export interface GranolaUtterance {
-  source: 'microphone' | 'system';
+  source: "microphone" | "system";
   text: string;
   start_timestamp: string;
   end_timestamp: string;
@@ -65,11 +76,11 @@ export interface GranolaCalendarEvent {
 
 export interface MinutesFrontmatter {
   title: string;
-  type: 'meeting';
+  type: "meeting";
   date: string;
   duration: string;
-  source: 'granola-reimport';
-  status: 'complete' | 'no-speech' | 'transcript-only';
+  source: "granola-reimport";
+  status: "complete" | "no-speech" | "transcript-only";
   attendees?: string[];
   people?: string[];
   speaker_map?: SpeakerAttribution[];
@@ -82,8 +93,8 @@ export interface MinutesFrontmatter {
 export interface SpeakerAttribution {
   speaker_label: string;
   name: string;
-  confidence: 'high' | 'medium' | 'low';
-  source: 'deterministic' | 'llm' | 'enrollment' | 'manual';
+  confidence: "high" | "medium" | "low";
+  source: "deterministic" | "llm" | "enrollment" | "manual";
 }
 
 export interface ActionItem {
@@ -99,7 +110,7 @@ export interface Decision {
 }
 
 export interface Intent {
-  kind: 'action-item' | 'decision' | 'open-question' | 'commitment';
+  kind: "action-item" | "decision" | "open-question" | "commitment";
   what: string;
   who?: string;
   status: string;
