@@ -11,6 +11,9 @@ const execFileAsync = promisify(execFile);
 const TIMEOUT_MS = 30_000;
 const DELAY_MS = 500;
 const MAX_BUFFER = 50 * 1024 * 1024;
+const AUTH_REFRESH_INTERVAL_MS = 10 * 60 * 1000; // Re-import credentials every 10 min
+
+let lastAuthRefresh = 0;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -19,12 +22,43 @@ function sleep(ms: number): Promise<void> {
 export async function ensureAuth(): Promise<void> {
   try {
     await execFileAsync('granola', ['auth', 'status'], { timeout: TIMEOUT_MS });
+    lastAuthRefresh = Date.now();
   } catch (err: unknown) {
     const exitCode = (err as { code?: number }).code;
     if (exitCode === 2 || (err as Error).message?.includes('Not authenticated')) {
       console.error('Granola CLI is not authenticated.');
       console.error('Run: granola auth login');
       process.exit(2);
+    }
+    throw err;
+  }
+}
+
+async function refreshAuthIfNeeded(): Promise<void> {
+  if (Date.now() - lastAuthRefresh < AUTH_REFRESH_INTERVAL_MS) return;
+  try {
+    await execFileAsync('granola', ['auth', 'login'], { timeout: TIMEOUT_MS });
+    lastAuthRefresh = Date.now();
+    console.error('  (auth refreshed)');
+  } catch {
+    // Refresh failed silently — will retry on next 401
+  }
+}
+
+async function retryOnAuth<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: unknown) {
+    const msg = (err as Error).message || '';
+    if (msg.includes('401') || msg.includes('Unauthorized') || msg.includes('Authentication')) {
+      console.error('  (401 detected, re-importing credentials...)');
+      try {
+        await execFileAsync('granola', ['auth', 'login'], { timeout: TIMEOUT_MS });
+        lastAuthRefresh = Date.now();
+      } catch {
+        throw err;
+      }
+      return await fn();
     }
     throw err;
   }
@@ -45,13 +79,16 @@ export async function getTranscript(
   id: string,
 ): Promise<GranolaUtterance[]> {
   await sleep(DELAY_MS);
+  await refreshAuthIfNeeded();
   try {
-    const { stdout } = await execFileAsync(
-      'granola',
-      ['meeting', 'transcript', id, '-o', 'json'],
-      { timeout: TIMEOUT_MS, maxBuffer: MAX_BUFFER },
-    );
-    return JSON.parse(stdout) as GranolaUtterance[];
+    return await retryOnAuth(async () => {
+      const { stdout } = await execFileAsync(
+        'granola',
+        ['meeting', 'transcript', id, '-o', 'json'],
+        { timeout: TIMEOUT_MS, maxBuffer: MAX_BUFFER },
+      );
+      return JSON.parse(stdout) as GranolaUtterance[];
+    });
   } catch (err: unknown) {
     const exitCode = (err as { code?: number }).code;
     if (exitCode === 4) return [];
@@ -65,13 +102,16 @@ export async function getEnhanced(
   id: string,
 ): Promise<ProseMirrorDoc | null> {
   await sleep(DELAY_MS);
+  await refreshAuthIfNeeded();
   try {
-    const { stdout } = await execFileAsync(
-      'granola',
-      ['meeting', 'enhanced', id, '-o', 'json'],
-      { timeout: TIMEOUT_MS, maxBuffer: MAX_BUFFER },
-    );
-    return JSON.parse(stdout) as ProseMirrorDoc;
+    return await retryOnAuth(async () => {
+      const { stdout } = await execFileAsync(
+        'granola',
+        ['meeting', 'enhanced', id, '-o', 'json'],
+        { timeout: TIMEOUT_MS, maxBuffer: MAX_BUFFER },
+      );
+      return JSON.parse(stdout) as ProseMirrorDoc;
+    });
   } catch (err: unknown) {
     const exitCode = (err as { code?: number }).code;
     if (exitCode === 4) return null;
