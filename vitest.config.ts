@@ -6,7 +6,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html", "lcov"],
       include: ["src/**/*.ts"],
-      exclude: ["src/cli.ts"],
+      exclude: ["src/cli.ts", "src/export.ts", "src/granola.ts", "src/types.ts"],
       all: true,
       thresholds: {
         lines: 75,

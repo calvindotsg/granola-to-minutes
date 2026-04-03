@@ -1,4 +1,4 @@
-import { type MockedFunction, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, type MockedFunction, vi } from "vitest";
 
 // Mock child_process before importing extractor
 vi.mock("node:child_process", () => ({
@@ -6,8 +6,8 @@ vi.mock("node:child_process", () => ({
   spawn: vi.fn(),
 }));
 
-import { execFile, spawn } from "node:child_process";
 import type { ChildProcess } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { EventEmitter } from "node:events";
 import type { Writable } from "node:stream";
 
@@ -20,11 +20,7 @@ async function importExtractor() {
   return mod.extractInsights;
 }
 
-function createMockProcess(
-  stdoutData: string,
-  exitCode: number,
-  stderrData = "",
-): ChildProcess {
+function createMockProcess(stdoutData: string, exitCode: number, stderrData = ""): ChildProcess {
   const proc = new EventEmitter() as ChildProcess;
   const stdout = new EventEmitter();
   const stderr = new EventEmitter();
@@ -89,8 +85,8 @@ describe("extractInsights", () => {
     const result = await extractInsights("Meeting summary content", "Test Meeting");
 
     expect(result).not.toBeNull();
-    expect(result!.action_items).toHaveLength(1);
-    expect(result!.action_items[0].assignee).toBe("Alice");
+    expect(result?.action_items).toHaveLength(1);
+    expect(result?.action_items[0].assignee).toBe("Alice");
   });
 
   it("returns null when claude exits non-zero", async () => {

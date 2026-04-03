@@ -52,9 +52,7 @@ export const sampleInsights: MeetingInsights = {
     { assignee: "Alice", task: "Send pricing doc", due: "Friday", status: "open" },
     { assignee: "Bob", task: "Review competitor grid", status: "done" },
   ],
-  decisions: [
-    { text: "Run pricing experiment at monthly billing", topic: "pricing" },
-  ],
+  decisions: [{ text: "Run pricing experiment at monthly billing", topic: "pricing" }],
   intents: [
     {
       kind: "commitment",

@@ -5,10 +5,22 @@ import { makeMeeting, makeProseMirrorDoc, makeUtterance, sampleInsights } from "
 describe("convertMeeting", () => {
   describe("full meeting with all fields", () => {
     const transcript = [
-      makeUtterance({ source: "microphone", text: "Hello everyone.", start_timestamp: "2026-03-17T06:30:00.000Z", end_timestamp: "2026-03-17T06:30:05.000Z" }),
-      makeUtterance({ source: "system", text: "Thanks for joining.", start_timestamp: "2026-03-17T06:30:05.000Z", end_timestamp: "2026-03-17T06:30:10.000Z" }),
+      makeUtterance({
+        source: "microphone",
+        text: "Hello everyone.",
+        start_timestamp: "2026-03-17T06:30:00.000Z",
+        end_timestamp: "2026-03-17T06:30:05.000Z",
+      }),
+      makeUtterance({
+        source: "system",
+        text: "Thanks for joining.",
+        start_timestamp: "2026-03-17T06:30:05.000Z",
+        end_timestamp: "2026-03-17T06:30:10.000Z",
+      }),
     ];
-    const enhanced = makeProseMirrorDoc([{ type: "paragraph", content: [{ type: "text", text: "AI summary content" }] }]);
+    const enhanced = makeProseMirrorDoc([
+      { type: "paragraph", content: [{ type: "text", text: "AI summary content" }] },
+    ]);
     const meeting = makeMeeting();
     const result = convertMeeting(meeting, transcript, enhanced, sampleInsights);
 
@@ -48,9 +60,9 @@ describe("convertMeeting", () => {
 
     it("builds speaker map with creator as SPEAKER_0", () => {
       expect(result.frontmatter.speaker_map).toHaveLength(2);
-      expect(result.frontmatter.speaker_map![0].speaker_label).toBe("SPEAKER_0");
-      expect(result.frontmatter.speaker_map![0].name).toBe("John Smith");
-      expect(result.frontmatter.speaker_map![0].confidence).toBe("high");
+      expect(result.frontmatter.speaker_map?.[0].speaker_label).toBe("SPEAKER_0");
+      expect(result.frontmatter.speaker_map?.[0].name).toBe("John Smith");
+      expect(result.frontmatter.speaker_map?.[0].confidence).toBe("high");
     });
 
     it("sets calendar_event from google calendar summary", () => {
@@ -59,7 +71,7 @@ describe("convertMeeting", () => {
 
     it("includes action items from insights", () => {
       expect(result.frontmatter.action_items).toHaveLength(2);
-      expect(result.frontmatter.action_items![0].assignee).toBe("Alice");
+      expect(result.frontmatter.action_items?.[0].assignee).toBe("Alice");
     });
 
     it("includes decisions from insights", () => {
@@ -117,7 +129,9 @@ describe("convertMeeting", () => {
   });
 
   describe("no transcript, has enhanced summary", () => {
-    const enhanced = makeProseMirrorDoc([{ type: "paragraph", content: [{ type: "text", text: "Meeting summary" }] }]);
+    const enhanced = makeProseMirrorDoc([
+      { type: "paragraph", content: [{ type: "text", text: "Meeting summary" }] },
+    ]);
     const result = convertMeeting(makeMeeting(), [], enhanced, null);
 
     it("sets status to no-speech", () => {
@@ -133,9 +147,18 @@ describe("convertMeeting", () => {
   describe("has transcript, no enhanced summary", () => {
     const transcript = [
       makeUtterance({ text: "First utterance" }),
-      makeUtterance({ text: "Second utterance", start_timestamp: "2026-03-17T06:35:00.000Z", end_timestamp: "2026-03-17T06:35:05.000Z" }),
+      makeUtterance({
+        text: "Second utterance",
+        start_timestamp: "2026-03-17T06:35:00.000Z",
+        end_timestamp: "2026-03-17T06:35:05.000Z",
+      }),
     ];
-    const result = convertMeeting(makeMeeting({ google_calendar_event: null }), transcript, null, null);
+    const result = convertMeeting(
+      makeMeeting({ google_calendar_event: null }),
+      transcript,
+      null,
+      null,
+    );
 
     it("sets status to complete", () => {
       expect(result.frontmatter.status).toBe("complete");
@@ -174,7 +197,8 @@ describe("convertMeeting", () => {
     it("formats less than 60 minutes", () => {
       const meeting = makeMeeting({
         google_calendar_event: {
-          id: "cal-1", summary: "Short",
+          id: "cal-1",
+          summary: "Short",
           start: { dateTime: "2026-03-17T14:00:00+08:00", timeZone: "Asia/Singapore" },
           end: { dateTime: "2026-03-17T14:25:00+08:00", timeZone: "Asia/Singapore" },
         },
@@ -185,7 +209,8 @@ describe("convertMeeting", () => {
     it("formats exactly 60 minutes as 1h", () => {
       const meeting = makeMeeting({
         google_calendar_event: {
-          id: "cal-1", summary: "Hour",
+          id: "cal-1",
+          summary: "Hour",
           start: { dateTime: "2026-03-17T14:00:00+08:00", timeZone: "Asia/Singapore" },
           end: { dateTime: "2026-03-17T15:00:00+08:00", timeZone: "Asia/Singapore" },
         },
@@ -196,7 +221,8 @@ describe("convertMeeting", () => {
     it("formats mixed hours and minutes", () => {
       const meeting = makeMeeting({
         google_calendar_event: {
-          id: "cal-1", summary: "Long",
+          id: "cal-1",
+          summary: "Long",
           start: { dateTime: "2026-03-17T14:00:00+08:00", timeZone: "Asia/Singapore" },
           end: { dateTime: "2026-03-17T15:30:00+08:00", timeZone: "Asia/Singapore" },
         },
@@ -242,14 +268,14 @@ describe("convertMeeting", () => {
       const meeting = makeMeeting({ people: { creator: undefined } });
       const transcript = [makeUtterance()];
       const result = convertMeeting(meeting, transcript, null, null);
-      expect(result.frontmatter.speaker_map![0].name).toBe("Local user");
+      expect(result.frontmatter.speaker_map?.[0].name).toBe("Local user");
     });
 
     it("SPEAKER_1 is always Remote participants", () => {
       const transcript = [makeUtterance()];
       const result = convertMeeting(makeMeeting(), transcript, null, null);
-      expect(result.frontmatter.speaker_map![1].name).toBe("Remote participants");
-      expect(result.frontmatter.speaker_map![1].confidence).toBe("low");
+      expect(result.frontmatter.speaker_map?.[1].name).toBe("Remote participants");
+      expect(result.frontmatter.speaker_map?.[1].confidence).toBe("low");
     });
   });
 
@@ -281,8 +307,16 @@ describe("convertMeeting", () => {
   describe("transcript formatting", () => {
     it("uses relative timestamps from first utterance", () => {
       const transcript = [
-        makeUtterance({ source: "microphone", text: "Hello", start_timestamp: "2026-03-17T06:30:00.000Z" }),
-        makeUtterance({ source: "system", text: "Hi", start_timestamp: "2026-03-17T06:31:30.000Z" }),
+        makeUtterance({
+          source: "microphone",
+          text: "Hello",
+          start_timestamp: "2026-03-17T06:30:00.000Z",
+        }),
+        makeUtterance({
+          source: "system",
+          text: "Hi",
+          start_timestamp: "2026-03-17T06:31:30.000Z",
+        }),
       ];
       const result = convertMeeting(makeMeeting(), transcript, null, null);
       expect(result.body).toContain("[SPEAKER_0 0:00] Hello");
@@ -292,7 +326,11 @@ describe("convertMeeting", () => {
     it("formats hours when transcript is long", () => {
       const transcript = [
         makeUtterance({ text: "Start", start_timestamp: "2026-03-17T06:00:00.000Z" }),
-        makeUtterance({ source: "system", text: "Later", start_timestamp: "2026-03-17T07:05:30.000Z" }),
+        makeUtterance({
+          source: "system",
+          text: "Later",
+          start_timestamp: "2026-03-17T07:05:30.000Z",
+        }),
       ];
       const result = convertMeeting(makeMeeting(), transcript, null, null);
       expect(result.body).toContain("[SPEAKER_1 1:05:30] Later");

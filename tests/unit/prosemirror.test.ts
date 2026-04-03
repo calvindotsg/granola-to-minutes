@@ -42,8 +42,14 @@ describe("toMarkdown", () => {
       {
         type: "bulletList",
         content: [
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Item 1" }] }] },
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Item 2" }] }] },
+          {
+            type: "listItem",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "Item 1" }] }],
+          },
+          {
+            type: "listItem",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "Item 2" }] }],
+          },
         ],
       },
     ]);
@@ -57,8 +63,14 @@ describe("toMarkdown", () => {
       {
         type: "orderedList",
         content: [
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "First" }] }] },
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Second" }] }] },
+          {
+            type: "listItem",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "First" }] }],
+          },
+          {
+            type: "listItem",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "Second" }] }],
+          },
         ],
       },
     ]);
@@ -87,7 +99,11 @@ describe("toMarkdown", () => {
 
   it("converts code block with language", () => {
     const doc = makeProseMirrorDoc([
-      { type: "codeBlock", attrs: { language: "typescript" }, content: [{ type: "text", text: "const x = 1;" }] },
+      {
+        type: "codeBlock",
+        attrs: { language: "typescript" },
+        content: [{ type: "text", text: "const x = 1;" }],
+      },
     ]);
     const result = toMarkdown(doc);
     expect(result).toContain("```typescript\nconst x = 1;\n```");
@@ -155,7 +171,10 @@ describe("toMarkdown", () => {
       {
         type: "bulletList",
         content: [
-          { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "Item" }] }] },
+          {
+            type: "listItem",
+            content: [{ type: "paragraph", content: [{ type: "text", text: "Item" }] }],
+          },
         ],
       },
     ]);
