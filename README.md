@@ -1,10 +1,16 @@
 # granola-to-minutes
 
-One-time CLI migration tool that exports [Granola](https://granola.ai) meeting data (AI summaries, transcripts, human notes) and converts it to [Minutes](https://github.com/calvindotsg/minutes)-native markdown format.
+CLI migration tool that exports [Granola](https://granola.ai) meeting data — AI summaries, transcripts, and human notes stored server-side — and converts it to [Minutes](https://github.com/calvindotsg/minutes)-native markdown that can be fully indexed, searched, and analyzed.
 
-## Why
+## Quick Start
 
-Granola's local Electron cache stores only metadata shells (title, date, attendees). Full content (AI summaries, transcripts) lives server-side. This tool fetches everything via `granola-cli` and produces markdown files that Minutes can fully index, search, and analyze.
+| I need to... | Command | Details |
+|---|---|---|
+| Run full export | `pnpm build && node dist/cli.js export` | [Usage](#usage) |
+| Preview without writing | `node dist/cli.js export --dry-run` | [Usage](#usage) |
+| Export single meeting | `node dist/cli.js export --note-id <uuid>` | [Usage](#usage) |
+| Run tests | `pnpm test:cov` | [Testing](#testing) |
+| Understand the code | See architecture | [CLAUDE.md](./CLAUDE.md) |
 
 ## Prerequisites
 
@@ -25,20 +31,34 @@ pnpm build
 
 ```bash
 # Full export to ~/meetings/
-node dist/index.js export
+node dist/cli.js export
 
 # Dry run (preview without writing)
-node dist/index.js export --dry-run
+node dist/cli.js export --dry-run
 
 # Skip LLM extraction
-node dist/index.js export --skip-llm
+node dist/cli.js export --skip-llm
 
-# Single meeting
-node dist/index.js export --note-id <uuid>
+# Single meeting by UUID (prefix match)
+node dist/cli.js export --note-id <uuid>
 
 # Only recent meetings
-node dist/index.js export --since 2026-03-01
+node dist/cli.js export --since 2026-03-01
+
+# Verbose logging
+node dist/cli.js export --verbose
 ```
+
+## Commands Reference
+
+| Command | Purpose |
+|---|---|
+| `pnpm build` | Compile TypeScript |
+| `pnpm check` | Lint with Biome |
+| `pnpm test` | Run test suite |
+| `pnpm test:cov` | Run tests with coverage (75% threshold) |
+| `pnpm test:watch` | Run tests in watch mode |
+| `pnpm format` | Auto-format source files |
 
 ## Output Format
 
@@ -91,6 +111,15 @@ calendar_event: Weekly Sync
 3. Converts ProseMirror JSON (Granola's note format) to markdown
 4. Optionally extracts structured action items/decisions via Claude
 5. Writes Minutes-native markdown files with proper frontmatter
+
+## Testing
+
+Tests use [Vitest](https://vitest.dev/) with v8 coverage. Coverage threshold is 75%.
+
+```bash
+pnpm test:cov    # run with coverage report
+pnpm test:watch  # watch mode for development
+```
 
 ## License
 
