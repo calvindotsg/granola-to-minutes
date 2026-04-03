@@ -10,8 +10,11 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/cli.js",
-    "check": "biome check src/",
-    "format": "biome format --write src/"
+    "check": "biome check src/ tests/",
+    "format": "biome format --write src/ tests/",
+    "test": "vitest run",
+    "test:cov": "vitest run --coverage",
+    "test:watch": "vitest --watch"
   },
   "engines": {
     "node": ">=20"
@@ -32,6 +35,8 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.10",
     "@types/node": "^25.5.0",
-    "typescript": "^6.0.2"
+    "@vitest/coverage-v8": "^4.1.2",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
   }
 }

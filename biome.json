@@ -13,6 +13,9 @@
   },
   "linter": {
     "enabled": true,
+    "domains": {
+      "test": "recommended"
+    },
     "rules": {
       "recommended": true,
       "suspicious": {
@@ -24,6 +27,18 @@
     }
   },
   "files": {
-    "includes": ["src/**/*.ts"]
-  }
+    "includes": ["src/**/*.ts", "tests/**/*.ts"]
+  },
+  "overrides": [
+    {
+      "includes": ["tests/**/*.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    }
+  ]
 }
