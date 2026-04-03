@@ -1,0 +1,17 @@
+{
+  "bootstrap-sha": "8272968041600fd5730a5465d0b3ed722f0152e9",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "changelog-sections": [
+        { "type": "feat", "section": "Features" },
+        { "type": "fix", "section": "Bug Fixes" },
+        { "type": "refactor", "section": "Code Refactoring" },
+        { "type": "test", "section": "Tests" },
+        { "type": "docs", "section": "Documentation" },
+        { "type": "chore", "section": "Miscellaneous" },
+        { "type": "ci", "section": "CI/CD" }
+      ]
+    }
+  }
+}
