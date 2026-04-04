@@ -47,6 +47,7 @@ These are non-obvious decisions and gotchas not discoverable by reading the code
 - **LLM extraction is optional.** `extractor.ts` checks for `claude` CLI availability once (cached at module level in `claudeAvailable`). Returns null on any failure, never blocks the export pipeline.
 - **Module-level state.** `extractor.ts` caches `claudeAvailable` and `granola.ts` caches `lastAuthRefresh` at module scope. Tests that exercise these need `vi.resetModules()` between test cases.
 - **Minutes consumer contract.** The output must satisfy Minutes parser requirements: `title`, `type`, `date`, `duration` are required frontmatter fields. `status` must be `"complete"`, `"no-speech"`, or `"transcript-only"`. `action_items` status must be `"open"` or `"done"`. See Minutes source at `crates/reader/src/parse.rs`.
+- **Branch protection via ruleset.** `main` is protected by a repository ruleset (`main-protection`) requiring PRs and the `test` CI check to pass. No bypass actors — all rules apply to everyone including repo admin. Managed via `gh api repos/calvindotsg/granola-to-minutes/rulesets` — do not use legacy branch protection rules.
 
 ## Dependencies & Testing
 
@@ -62,13 +63,15 @@ This repo serves as a reference pattern for future TypeScript CLI projects. When
 - `vitest.config.ts` -- coverage config, thresholds, globals
 - `biome.json` -- formatter, linter rules, test domain override
 - `.github/workflows/test.yml` -- lint + build + test CI
-- `.github/workflows/release.yml` -- release-please automation
+- `.github/workflows/release.yml` -- release-please with GitHub App token for CI triggering
 - `release-please-config.json` -- changelog sections for conventional commits
 - `CONTRIBUTING.md` -- dev setup, commit conventions, PR process
+- `LICENSE` -- MIT license (adjust copyright year and holder)
 
 **Follow structure:**
 - README.md progressive disclosure: quick start table -> commands reference -> output format -> how it works
 - CLAUDE.md layout: quick commands -> architecture -> key files -> implementation patterns -> reusable patterns
+- Branch protection: repository ruleset via `gh api` (deletion block, force push block, required PRs, required status checks)
 
 **Adapt** (change types to match project):
 - `tests/fixtures.ts` -- factory pattern with `makeX(overrides?)` and shared sample data
