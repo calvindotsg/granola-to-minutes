@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/calvindotsg/granola-to-minutes/compare/v0.2.0...v0.3.0) (2026-04-04)
+
+
+### Features
+
+* **repo:** add branch protection, LICENSE, and GitHub App token ([2092319](https://github.com/calvindotsg/granola-to-minutes/commit/209231955b2b522a8bd870246bda34f575343aa0))
+
 ## [0.2.0](https://github.com/calvindotsg/granola-to-minutes/compare/v0.1.0...v0.2.0) (2026-04-03)
 
 
