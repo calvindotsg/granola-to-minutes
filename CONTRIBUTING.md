@@ -62,7 +62,12 @@ ci(github): add Node 22 to test matrix
 
 ## Pull Requests
 
+The `main` branch is protected by a [repository ruleset](https://github.com/calvindotsg/granola-to-minutes/rules). All changes must go through a pull request:
+
 1. Create a feature branch from `main`
 2. Make your changes with tests
-3. Ensure `pnpm check` and `pnpm test:cov` pass
-4. Open a PR with a clear description
+3. Push and open a PR targeting `main`
+4. The **test** CI job must pass before merge
+5. Merge using any strategy (merge, squash, or rebase)
+
+Direct pushes, force pushes, and branch deletion on `main` are blocked.
