@@ -24,7 +24,7 @@ Three data sources per meeting:
 
 ## Key Files
 
-- `src/cli.ts` -- thin CLI entry point (Commander, process.exit handling)
+- `src/cli.ts` -- CLI entry point (Commander, dynamic version, signal handlers, `--json` flag, rich help text)
 - `src/export.ts` -- orchestration: `runExport(options)` function
 - `src/config.ts` -- business rules and defaults (timezone, speaker map, LLM schema, slug constraints)
 - `src/granola.ts` -- shells out to granola-cli, parses JSON, auth retry
@@ -48,6 +48,10 @@ These are non-obvious decisions and gotchas not discoverable by reading the code
 - **Module-level state.** `extractor.ts` caches `claudeAvailable` and `granola.ts` caches `lastAuthRefresh` at module scope. Tests that exercise these need `vi.resetModules()` between test cases.
 - **Minutes consumer contract.** The output must satisfy Minutes parser requirements: `title`, `type`, `date`, `duration` are required frontmatter fields. `status` must be `"complete"`, `"no-speech"`, or `"transcript-only"`. `action_items` status must be `"open"` or `"done"`. See Minutes source at `crates/reader/src/parse.rs`.
 - **Branch protection via ruleset.** `main` is protected by a repository ruleset (`main-protection`) requiring PRs and the `test` CI check to pass. No bypass actors — all rules apply to everyone including repo admin. Managed via `gh api repos/calvindotsg/granola-to-minutes/rulesets` — do not use legacy branch protection rules.
+- **Dynamic CLI version via `createRequire`.** `cli.ts` reads version from `../package.json` at runtime using `createRequire(import.meta.url)`. Cannot use `import pkg from '../package.json'` because ESM (`type: "module"`) requires `resolveJsonModule` in tsconfig which isn't enabled. Path `../package.json` resolves from `dist/cli.js` at runtime. Never hardcode the version string.
+- **`--json` mode suppresses progress, not errors.** The `log()` helper in `export.ts` gates progress/info messages behind `!json`. Error messages (line 140) always go to `console.error` regardless of mode — matching `gh`/`kubectl` convention. Agents parsing stdout JSON won't see interference from errors on stderr.
+- **npm publish uses OIDC trusted publishing.** No `NPM_TOKEN` secret exists. The `npm-publish` CI job authenticates via GitHub Actions OIDC (`id-token: write` permission). If publishing fails with auth errors, check `npm trust list granola-to-minutes` — do not create a new npm token as a first response.
+- **Release workflow has two jobs with different auth.** `release-please` uses a GitHub App token (to trigger CI on its PRs). `npm-publish` uses OIDC (no npm token). They cannot share credentials — keep them as separate jobs.
 
 ## Dependencies & Testing
 
@@ -63,10 +67,14 @@ This repo serves as a reference pattern for future TypeScript CLI projects. When
 - `vitest.config.ts` -- coverage config, thresholds, globals
 - `biome.json` -- formatter, linter rules, test domain override
 - `.github/workflows/test.yml` -- lint + build + test CI
-- `.github/workflows/release.yml` -- release-please with GitHub App token for CI triggering
+- `.github/workflows/release.yml` -- release-please with GitHub App token + npm publish via OIDC trusted publishing
 - `release-please-config.json` -- changelog sections for conventional commits
 - `CONTRIBUTING.md` -- dev setup, commit conventions, PR process
 - `LICENSE` -- MIT license (adjust copyright year and holder)
+
+**Follow patterns** (adapt field values):
+- `package.json` -- `files`, `repository`, `homepage`, `bugs`, `prepublishOnly`, `bin` with shebang, `engines`
+- `src/cli.ts` -- dynamic version via `createRequire`, signal handlers, `addHelpText` with exit codes/examples
 
 **Follow structure:**
 - README.md progressive disclosure: quick start table -> commands reference -> output format -> how it works
