@@ -6,9 +6,10 @@ CLI migration tool that exports [Granola](https://granola.ai) meeting data — A
 
 | I need to... | Command | Details |
 |---|---|---|
-| Run full export | `pnpm build && node dist/cli.js export` | [Usage](#usage) |
-| Preview without writing | `node dist/cli.js export --dry-run` | [Usage](#usage) |
-| Export single meeting | `node dist/cli.js export --note-id <uuid>` | [Usage](#usage) |
+| Run full export | `npx granola-to-minutes export` | [Usage](#usage) |
+| Preview without writing | `granola-to-minutes export --dry-run` | [Usage](#usage) |
+| Export single meeting | `granola-to-minutes export --note-id <uuid>` | [Usage](#usage) |
+| Machine-readable output | `granola-to-minutes export --json` | [Usage](#usage) |
 | Run tests | `pnpm test:cov` | [Testing](#testing) |
 | Understand the code | See architecture | [CLAUDE.md](./CLAUDE.md) |
 
@@ -21,6 +22,12 @@ CLI migration tool that exports [Granola](https://granola.ai) meeting data — A
 ## Install
 
 ```bash
+npm install -g granola-to-minutes
+```
+
+### From source
+
+```bash
 git clone https://github.com/calvindotsg/granola-to-minutes.git
 cd granola-to-minutes
 pnpm install
@@ -31,22 +38,25 @@ pnpm build
 
 ```bash
 # Full export to ~/meetings/
-node dist/cli.js export
+granola-to-minutes export
 
 # Dry run (preview without writing)
-node dist/cli.js export --dry-run
+granola-to-minutes export --dry-run
 
 # Skip LLM extraction
-node dist/cli.js export --skip-llm
+granola-to-minutes export --skip-llm
 
 # Single meeting by UUID (prefix match)
-node dist/cli.js export --note-id <uuid>
+granola-to-minutes export --note-id <uuid>
 
 # Only recent meetings
-node dist/cli.js export --since 2026-03-01
+granola-to-minutes export --since 2026-03-01
 
 # Verbose logging
-node dist/cli.js export --verbose
+granola-to-minutes export --verbose
+
+# Machine-readable JSON output (for AI agents and scripts)
+granola-to-minutes export --json
 ```
 
 ## Commands Reference
