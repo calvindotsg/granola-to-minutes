@@ -1,4 +1,4 @@
-import { existsSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import matter from "gray-matter";
 import { COLLISION } from "./config.js";
@@ -24,8 +24,17 @@ export function writeMinutesFile(
   }
 
   const tmpPath = `${filePath}.tmp`;
-  writeFileSync(tmpPath, content, "utf-8");
-  renameSync(tmpPath, filePath);
+  try {
+    writeFileSync(tmpPath, content, { encoding: "utf-8", mode: 0o600 });
+    renameSync(tmpPath, filePath);
+  } catch (err) {
+    try {
+      unlinkSync(tmpPath);
+    } catch {
+      // tmp file already gone or never created
+    }
+    throw err;
+  }
   return resolvedSlug;
 }
 

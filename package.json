@@ -14,7 +14,8 @@
     "format": "biome format --write src/ tests/",
     "test": "vitest run",
     "test:cov": "vitest run --coverage",
-    "test:watch": "vitest --watch"
+    "test:watch": "vitest --watch",
+    "prepublishOnly": "pnpm check && pnpm test && pnpm build"
   },
   "engines": {
     "node": ">=20"
@@ -25,8 +26,19 @@
     "meeting-notes",
     "migration"
   ],
-  "author": "John Smith",
+  "author": "calvindotsg",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/calvindotsg/granola-to-minutes.git"
+  },
+  "homepage": "https://github.com/calvindotsg/granola-to-minutes#readme",
+  "bugs": {
+    "url": "https://github.com/calvindotsg/granola-to-minutes/issues"
+  },
+  "files": [
+    "dist"
+  ],
   "packageManager": "pnpm@10.33.0",
   "dependencies": {
     "commander": "^14.0.3",

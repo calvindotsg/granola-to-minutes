@@ -36,8 +36,8 @@ async function refreshAuthIfNeeded(): Promise<void> {
     await execFileAsync("granola", ["auth", "login"], { timeout: TIMEOUT_MS });
     lastAuthRefresh = Date.now();
     console.error("  (auth refreshed)");
-  } catch {
-    // Refresh failed silently — will retry on next 401
+  } catch (err: unknown) {
+    console.error(`  (auth refresh failed: ${errorMessage(err)})`);
   }
 }
 
@@ -67,7 +67,11 @@ export async function listMeetings(limit: number = 1000): Promise<GranolaMeeting
     ["meeting", "list", "--limit", String(limit), "-o", "json"],
     { timeout: TIMEOUT_MS * 3, maxBuffer: MAX_BUFFER },
   );
-  return JSON.parse(stdout) as GranolaMeeting[];
+  try {
+    return JSON.parse(stdout) as GranolaMeeting[];
+  } catch {
+    throw new Error(`Failed to parse granola meeting list output (${stdout.length} bytes)`);
+  }
 }
 
 /** Fetch transcript utterances for a meeting. Returns empty array if unavailable. */
@@ -81,7 +85,11 @@ export async function getTranscript(id: string): Promise<GranolaUtterance[]> {
         ["meeting", "transcript", id, "-o", "json"],
         { timeout: TIMEOUT_MS, maxBuffer: MAX_BUFFER },
       );
-      return JSON.parse(stdout) as GranolaUtterance[];
+      try {
+        return JSON.parse(stdout) as GranolaUtterance[];
+      } catch {
+        throw new Error(`Failed to parse granola transcript output for ${id}`);
+      }
     });
   } catch (err: unknown) {
     const exitCode = (err as { code?: number }).code;
@@ -102,7 +110,11 @@ export async function getEnhanced(id: string): Promise<ProseMirrorDoc | null> {
         timeout: TIMEOUT_MS,
         maxBuffer: MAX_BUFFER,
       });
-      return JSON.parse(stdout) as ProseMirrorDoc;
+      try {
+        return JSON.parse(stdout) as ProseMirrorDoc;
+      } catch {
+        throw new Error(`Failed to parse granola enhanced output for ${id}`);
+      }
     });
   } catch (err: unknown) {
     const exitCode = (err as { code?: number }).code;

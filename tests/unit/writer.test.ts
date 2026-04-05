@@ -5,14 +5,16 @@ vi.mock("node:fs", () => ({
   existsSync: vi.fn(),
   writeFileSync: vi.fn(),
   renameSync: vi.fn(),
+  unlinkSync: vi.fn(),
 }));
 
-import { existsSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import { writeMinutesFile } from "../../src/writer.js";
 
 const mockExistsSync = vi.mocked(existsSync);
 const mockWriteFileSync = vi.mocked(writeFileSync);
 const mockRenameSync = vi.mocked(renameSync);
+const mockUnlinkSync = vi.mocked(unlinkSync);
 
 const baseFrontmatter: MinutesFrontmatter = {
   title: "Test Meeting",
@@ -25,7 +27,7 @@ const baseFrontmatter: MinutesFrontmatter = {
 
 describe("writeMinutesFile", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   it("writes tmp file then renames atomically", () => {
@@ -36,6 +38,41 @@ describe("writeMinutesFile", () => {
     expect(mockWriteFileSync).toHaveBeenCalledOnce();
     expect(mockWriteFileSync.mock.calls[0][0]).toBe("/out/test.md.tmp");
     expect(mockRenameSync).toHaveBeenCalledWith("/out/test.md.tmp", "/out/test.md");
+  });
+
+  it("writes files with owner-only permissions (0o600)", () => {
+    mockExistsSync.mockReturnValue(false);
+
+    writeMinutesFile("/out", "test.md", baseFrontmatter, "body", false);
+
+    expect(mockWriteFileSync.mock.calls[0][2]).toEqual({ encoding: "utf-8", mode: 0o600 });
+  });
+
+  it("cleans up tmp file when rename fails", () => {
+    mockExistsSync.mockReturnValue(false);
+    mockRenameSync.mockImplementation(() => {
+      throw new Error("rename failed");
+    });
+
+    expect(() => writeMinutesFile("/out", "test.md", baseFrontmatter, "body", false)).toThrow(
+      "rename failed",
+    );
+
+    expect(mockUnlinkSync).toHaveBeenCalledWith("/out/test.md.tmp");
+  });
+
+  it("still throws original error if tmp cleanup also fails", () => {
+    mockExistsSync.mockReturnValue(false);
+    mockRenameSync.mockImplementation(() => {
+      throw new Error("rename failed");
+    });
+    mockUnlinkSync.mockImplementation(() => {
+      throw new Error("unlink failed");
+    });
+
+    expect(() => writeMinutesFile("/out", "test.md", baseFrontmatter, "body", false)).toThrow(
+      "rename failed",
+    );
   });
 
   it("returns the slug", () => {
