@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/calvindotsg/granola-to-minutes/compare/v0.3.0...v0.4.0) (2026-04-05)
+
+
+### Features
+
+* **repo:** prepare package for npm publication ([353c9e8](https://github.com/calvindotsg/granola-to-minutes/commit/353c9e8e8587e55fdcdb3765f9b99aa1e81980a8))
+* **repo:** prepare package for npm publication ([#5](https://github.com/calvindotsg/granola-to-minutes/issues/5)) ([353c9e8](https://github.com/calvindotsg/granola-to-minutes/commit/353c9e8e8587e55fdcdb3765f9b99aa1e81980a8))
+* **src:** add --json output, rich help text, and input validation ([3118f12](https://github.com/calvindotsg/granola-to-minutes/commit/3118f12bb618e77f77f7eff7945ba0fe9ba4ef29))
+
+
+### Bug Fixes
+
+* **src:** harden file writes and external subprocess handling ([a8fd54a](https://github.com/calvindotsg/granola-to-minutes/commit/a8fd54aa5108e8b1e0b537412d3304fc53446b0a))
+
 ## [0.3.0](https://github.com/calvindotsg/granola-to-minutes/compare/v0.2.0...v0.3.0) (2026-04-04)
 
 
