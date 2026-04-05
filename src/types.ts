@@ -7,6 +7,7 @@ export interface ExportOptions {
   noteId?: string;
   since?: string;
   verbose: boolean;
+  json: boolean;
 }
 
 // --- Granola CLI output types (from granola-cli/src/types.ts) ---
