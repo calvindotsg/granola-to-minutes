@@ -1,6 +1,6 @@
 # granola-to-minutes
 
-CLI migration tool that exports [Granola](https://granola.ai) meeting data — AI summaries, transcripts, and human notes stored server-side — and converts it to [Minutes](https://github.com/calvindotsg/minutes)-native markdown that can be fully indexed, searched, and analyzed.
+CLI migration tool that exports [Granola](https://granola.ai) meeting data — AI summaries, transcripts, and human notes stored server-side — and converts it to [Minutes](https://github.com/silverstein/minutes)-native markdown that can be fully indexed, searched, and analyzed.
 
 ## Quick Start
 
@@ -16,7 +16,7 @@ CLI migration tool that exports [Granola](https://granola.ai) meeting data — A
 ## Prerequisites
 
 - **Node.js** >= 20
-- **granola-cli** — `pnpm add -g granola-cli && granola auth login`
+- **[granola-cli](https://github.com/magarcia/granola-cli)** (community-built, not affiliated with Granola Labs) — `pnpm add -g granola-cli && granola auth login`
 - **Claude Code** (optional) — for structured extraction of action items, decisions, and intents from AI summaries
 
 ## Install
@@ -121,6 +121,10 @@ calendar_event: Weekly Sync
 3. Converts ProseMirror JSON (Granola's note format) to markdown
 4. Optionally extracts structured action items/decisions via Claude
 5. Writes Minutes-native markdown files with proper frontmatter
+
+## See Also
+
+Minutes has a built-in file-based import — `minutes import granola` — that reads from `~/.granola-archivist/output/` without any API calls. See the [comparison table](https://github.com/silverstein/minutes#want-transcripts-and-ai-summaries) in the Minutes README for when to use each tool.
 
 ## Testing
 
