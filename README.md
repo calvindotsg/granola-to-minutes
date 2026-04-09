@@ -7,7 +7,7 @@
 
 CLI migration tool that exports [Granola](https://granola.ai) meeting data — AI summaries, transcripts, and human notes — to [Minutes](https://github.com/silverstein/minutes)-native markdown with YAML frontmatter. Extracts structured action items and decisions via Claude. Designed for one-time bulk migration from Granola's server-side storage.
 
-![granola-to-minutes demo](demo.gif)
+![granola-to-minutes demo](demo/demo.gif)
 
 ## Features
 

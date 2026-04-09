@@ -16,7 +16,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 CAST_FILE="$REPO_ROOT/demo.cast"
-GIF_FILE="$REPO_ROOT/demo.gif"
+GIF_FILE="$SCRIPT_DIR/demo.gif"
 
 echo "==> Generating synthetic recording..."
 python3 "$SCRIPT_DIR/generate-cast.py" > "$CAST_FILE"
