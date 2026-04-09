@@ -1,6 +1,6 @@
 {
   "name": "granola-to-minutes",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "One-time CLI migration tool: export Granola meetings to Minutes-native markdown",
   "type": "module",
   "bin": {
