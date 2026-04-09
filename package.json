@@ -1,7 +1,7 @@
 {
   "name": "granola-to-minutes",
   "version": "0.4.1",
-  "description": "One-time CLI migration tool: export Granola meetings to Minutes-native markdown",
+  "description": "CLI migration tool that exports Granola meeting data — AI summaries, transcripts, and human notes — to Minutes-native markdown with YAML frontmatter",
   "type": "module",
   "bin": {
     "granola-to-minutes": "./dist/cli.js"
@@ -33,7 +33,10 @@
     "ai-summary",
     "frontmatter"
   ],
-  "author": "calvindotsg",
+  "author": {
+    "name": "Calvin",
+    "url": "https://github.com/calvindotsg"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
