@@ -2,6 +2,8 @@
 
 > Developer reference for AI agents and future Claude Code sessions. For usage and installation, see [README.md](./README.md).
 
+New to the codebase? Start with [Architecture](#architecture), then read [Implementation Patterns](#implementation-patterns) for non-obvious gotchas.
+
 ## Quick Commands
 
 | Task | Command |
@@ -61,31 +63,4 @@ These are non-obvious decisions and gotchas not discoverable by reading the code
 
 ## Reusable Patterns
 
-This repo serves as a reference pattern for future TypeScript CLI projects. When starting a new project, reference this repo with `--add-dir` or by path.
-
-**Copy directly** (adjust versions):
-- `vitest.config.ts` -- coverage config, thresholds, globals
-- `biome.json` -- formatter, linter rules, test domain override
-- `.github/workflows/test.yml` -- lint + build + test CI
-- `.github/workflows/release.yml` -- release-please with GitHub App token + npm publish via OIDC trusted publishing
-- `release-please-config.json` -- changelog sections for conventional commits
-- `CONTRIBUTING.md` -- dev setup, commit conventions, PR process
-- `LICENSE` -- MIT license (adjust copyright year and holder)
-
-**Follow patterns** (adapt field values):
-- `package.json` -- `files`, `repository`, `homepage`, `bugs`, `prepublishOnly`, `bin` with shebang, `engines`
-- `src/cli.ts` -- dynamic version via `createRequire`, signal handlers, `addHelpText` with exit codes/examples
-
-**Follow structure:**
-- README.md progressive disclosure: quick start table -> commands reference -> output format -> how it works
-- CLAUDE.md layout: quick commands -> architecture -> key files -> implementation patterns -> reusable patterns
-- Branch protection: repository ruleset via `gh api` (deletion block, force push block, required PRs, required status checks)
-
-**Adapt** (change types to match project):
-- `tests/fixtures.ts` -- factory pattern with `makeX(overrides?)` and shared sample data
-- Commit scopes table in CONTRIBUTING.md
-
-**Project-specific (do not copy):**
-- `src/granola.ts` -- Granola CLI wrapper
-- `src/config.ts` -- speaker map, timezone, Granola-specific business rules
-- Minutes consumer contract in Implementation Patterns
+See [docs/reusable-patterns.md](./docs/reusable-patterns.md) — copy-ready patterns for new TypeScript CLI projects.

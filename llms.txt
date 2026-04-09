@@ -1,0 +1,30 @@
+# granola-to-minutes
+
+> CLI tool that exports Granola meeting data (AI summaries, transcripts, notes) to Minutes-native markdown with YAML frontmatter.
+
+## What it does
+
+Extracts meeting metadata, AI-generated summaries, human notes, and transcripts
+from Granola's server-side storage via granola-cli. Converts ProseMirror JSON to
+markdown. Writes Minutes-compatible files with YAML frontmatter (title, date,
+duration, attendees, speaker map).
+
+## Install
+
+npx granola-to-minutes export
+
+## Key features
+
+- Full export: metadata, AI summaries, transcripts, human notes
+- Minutes-native markdown with YAML frontmatter
+- Optional Claude-powered extraction of action items and decisions
+- Dry-run, single-meeting, date-filtered, and JSON output modes
+- Atomic file writes with collision handling
+
+## Links
+
+- Source: https://github.com/calvindotsg/granola-to-minutes
+- npm: https://www.npmjs.com/package/granola-to-minutes
+- Minutes (consumer): https://github.com/silverstein/minutes
+- granola-cli (dependency): https://github.com/magarcia/granola-cli
+- Changelog: https://github.com/calvindotsg/granola-to-minutes/blob/main/CHANGELOG.md
