@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/calvindotsg/granola-to-minutes/compare/v0.4.1...v0.4.2) (2026-04-09)
+
+
+### Bug Fixes
+
+* **github:** upgrade npm-publish job to Node 24 for OIDC compatibility ([#13](https://github.com/calvindotsg/granola-to-minutes/issues/13)) ([05f2b41](https://github.com/calvindotsg/granola-to-minutes/commit/05f2b41ed6fd1a305483e62be9976c88e50fcf2a))
+
 ## [0.4.1](https://github.com/calvindotsg/granola-to-minutes/compare/v0.4.0...v0.4.1) (2026-04-09)
 
 
