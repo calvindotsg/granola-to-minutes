@@ -8,7 +8,7 @@ Usage:
     python3 demo/generate-cast.py > demo.cast
     agg --theme custom --font-family "FiraCode Nerd Font" \\
         --font-dir ~/Library/Fonts --idle-time-limit 2 --font-size 14 \\
-        demo.cast demo.gif
+        demo/demo.cast demo/demo.gif
 """
 
 import json
