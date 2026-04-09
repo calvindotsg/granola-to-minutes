@@ -1,15 +1,31 @@
 # granola-to-minutes
 
-CLI migration tool that exports [Granola](https://granola.ai) meeting data — AI summaries, transcripts, and human notes stored server-side — and converts it to [Minutes](https://github.com/silverstein/minutes)-native markdown that can be fully indexed, searched, and analyzed.
+[![npm version](https://img.shields.io/npm/v/granola-to-minutes)](https://www.npmjs.com/package/granola-to-minutes)
+[![CI](https://img.shields.io/github/actions/workflow/status/calvindotsg/granola-to-minutes/test.yml?branch=main)](https://github.com/calvindotsg/granola-to-minutes/actions)
+[![license](https://img.shields.io/npm/l/granola-to-minutes)](./LICENSE)
+[![node](https://img.shields.io/node/v/granola-to-minutes)](https://nodejs.org/)
+
+CLI migration tool that exports [Granola](https://granola.ai) meeting data — AI summaries, transcripts, and human notes — to [Minutes](https://github.com/silverstein/minutes)-native markdown with YAML frontmatter. Extracts structured action items and decisions via Claude. Designed for one-time bulk migration from Granola's server-side storage.
+
+![granola-to-minutes demo](demo.gif)
+
+## Features
+
+- Full meeting data extraction: AI summaries, transcripts, human notes
+- Minutes-native markdown output with YAML frontmatter
+- Optional Claude-powered extraction of action items, decisions, and intents
+- Dry-run preview, single-meeting, and date-filtered exports
+- Machine-readable JSON output for scripting and AI agents
+- Atomic file writes with collision handling
 
 ## Quick Start
 
 | I need to... | Command | Details |
 |---|---|---|
 | Run full export | `npx granola-to-minutes export` | [Usage](#usage) |
-| Preview without writing | `granola-to-minutes export --dry-run` | [Usage](#usage) |
-| Export single meeting | `granola-to-minutes export --note-id <uuid>` | [Usage](#usage) |
-| Machine-readable output | `granola-to-minutes export --json` | [Usage](#usage) |
+| Preview without writing | `npx granola-to-minutes export --dry-run` | [Usage](#usage) |
+| Export single meeting | `npx granola-to-minutes export --note-id <uuid>` | [Usage](#usage) |
+| Machine-readable output | `npx granola-to-minutes export --json` | [Usage](#usage) |
 | Run tests | `pnpm test:cov` | [Testing](#testing) |
 | Understand the code | See architecture | [CLAUDE.md](./CLAUDE.md) |
 
@@ -21,8 +37,17 @@ CLI migration tool that exports [Granola](https://granola.ai) meeting data — A
 
 ## Install
 
+Run directly without installing (recommended for one-time use):
+
 ```bash
-npm install -g granola-to-minutes
+npx granola-to-minutes export
+```
+
+Or install globally:
+
+```bash
+npm install -g granola-to-minutes    # npm
+pnpm add -g granola-to-minutes       # pnpm
 ```
 
 ### From source
@@ -35,6 +60,8 @@ pnpm build
 ```
 
 ## Usage
+
+> Commands below assume global install. Prefix with `npx` if running without installing.
 
 ```bash
 # Full export to ~/meetings/
@@ -134,6 +161,10 @@ Tests use [Vitest](https://vitest.dev/) with v8 coverage. Coverage threshold is 
 pnpm test:cov    # run with coverage report
 pnpm test:watch  # watch mode for development
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, code style, and commit conventions.
 
 ## License
 

@@ -24,7 +24,14 @@
     "granola",
     "minutes",
     "meeting-notes",
-    "migration"
+    "migration",
+    "cli",
+    "typescript",
+    "export",
+    "markdown",
+    "transcript",
+    "ai-summary",
+    "frontmatter"
   ],
   "author": "calvindotsg",
   "license": "MIT",

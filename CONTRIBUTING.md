@@ -47,7 +47,7 @@ Use [Conventional Commits v1.0.0](https://www.conventionalcommits.org/) with req
 | `src` | `src/**/*.ts` | Source code or tests exercising source modules |
 | `repo` | `package.json`, `biome.json`, `vitest.config.ts`, `.gitignore` | Repository configuration |
 | `github` | `.github/workflows/**`, `release-please-config.json` | GitHub Actions and release config |
-| `root` | `README.md`, `CLAUDE.md`, `CONTRIBUTING.md` | Root-level documentation |
+| `root` | `README.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `llms.txt`, `docs/` | Root-level documentation |
 
 **Examples:**
 
