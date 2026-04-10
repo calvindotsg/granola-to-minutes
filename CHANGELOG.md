@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/calvindotsg/granola-to-minutes/compare/v0.4.2...v0.4.3) (2026-04-10)
+
+
+### Miscellaneous Chores
+
+* **repo:** release 0.4.3 ([#20](https://github.com/calvindotsg/granola-to-minutes/issues/20)) ([002ca17](https://github.com/calvindotsg/granola-to-minutes/commit/002ca178f18dc785dfab076502b9654b5c96d16b))
+
 ## [0.4.2](https://github.com/calvindotsg/granola-to-minutes/compare/v0.4.1...v0.4.2) (2026-04-09)
 
 
