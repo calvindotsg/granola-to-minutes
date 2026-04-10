@@ -1,9 +1,10 @@
 # granola-to-minutes
 
+[![exports to minutes](https://img.shields.io/badge/exports%20to-minutes-7C3AED)](https://github.com/silverstein/minutes#want-transcripts-and-ai-summaries)
 [![npm version](https://img.shields.io/npm/v/granola-to-minutes)](https://www.npmjs.com/package/granola-to-minutes)
 [![CI](https://img.shields.io/github/actions/workflow/status/calvindotsg/granola-to-minutes/test.yml?branch=main)](https://github.com/calvindotsg/granola-to-minutes/actions)
+[![last commit](https://img.shields.io/github/last-commit/calvindotsg/granola-to-minutes)](https://github.com/calvindotsg/granola-to-minutes/commits/main)
 [![license](https://img.shields.io/npm/l/granola-to-minutes)](./LICENSE)
-[![node](https://img.shields.io/node/v/granola-to-minutes)](https://nodejs.org/)
 
 CLI migration tool that exports [Granola](https://granola.ai) meeting data — AI summaries, transcripts, and human notes — to [Minutes](https://github.com/silverstein/minutes)-native markdown with YAML frontmatter. Extracts structured action items and decisions via Claude. Designed for one-time bulk migration from Granola's server-side storage.
 
