@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.0](https://github.com/calvindotsg/granola-to-minutes/compare/v0.4.3...v1.0.0) (2026-08-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **repo:** drops Node 20 (EOL 2026-04-30); commander 15 requires >=22.12.0
+
+### Features
+
+* **src:** report transcript-only status when a meeting has no summary ([#30](https://github.com/calvindotsg/granola-to-minutes/issues/30)) ([97efdb1](https://github.com/calvindotsg/granola-to-minutes/commit/97efdb15f9f250a1ced9266381d195e207b99185))
+
+
+### Miscellaneous Chores
+
+* **repo:** require Node &gt;= 22.12 and upgrade the toolchain ([#25](https://github.com/calvindotsg/granola-to-minutes/issues/25)) ([5629226](https://github.com/calvindotsg/granola-to-minutes/commit/5629226034841071c2289c1734a2458e76cf16d3))
+
 ## [0.4.3](https://github.com/calvindotsg/granola-to-minutes/compare/v0.4.2...v0.4.3) (2026-04-10)
 
 
