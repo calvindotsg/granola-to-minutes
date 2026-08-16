@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Frontmatter",
+  "description": "Frontmatter for a meeting/memo markdown file.",
+  "type": "object",
+  "properties": {
+    "action_items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ActionItem"
+      }
+    },
+    "attendees": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "calendar_event": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "context": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Decision"
+      }
+    },
+    "duration": {
+      "type": "string"
+    },
+    "entities": {
+      "$ref": "#/$defs/EntityLinks"
+    },
+    "intents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Intent"
+      }
+    },
+    "people": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recorded_by": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OutputStatus"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "processing_warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ProcessingWarning"
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "title": {
+      "type": "string"
+    },
+    "type": {
+      "$ref": "#/$defs/ContentType"
+    },
+    "visibility": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Visibility"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "title",
+    "type",
+    "date",
+    "duration"
+  ],
+  "$defs": {
+    "ActionItem": {
+      "description": "A structured action item extracted from a meeting.\nQueryable via MCP tools: filter by assignee, status, due date.",
+      "type": "object",
+      "properties": {
+        "assignee": {
+          "type": "string"
+        },
+        "due": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": "string"
+        },
+        "task": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "assignee",
+        "task",
+        "status"
+      ]
+    },
+    "ContentType": {
+      "description": "Content types for output files.",
+      "type": "string",
+      "enum": [
+        "meeting",
+        "memo"
+      ]
+    },
+    "Decision": {
+      "description": "A structured decision extracted from a meeting.\nQueryable via MCP tools: search across all meetings for decision history.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "topic": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
+    "EntityLinks": {
+      "type": "object",
+      "properties": {
+        "people": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EntityRef"
+          }
+        },
+        "projects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EntityRef"
+          }
+        }
+      }
+    },
+    "EntityRef": {
+      "type": "object",
+      "properties": {
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "label": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "slug",
+        "label"
+      ]
+    },
+    "Intent": {
+      "type": "object",
+      "properties": {
+        "by_date": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "$ref": "#/$defs/IntentKind"
+        },
+        "status": {
+          "type": "string"
+        },
+        "what": {
+          "type": "string"
+        },
+        "who": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "what",
+        "status"
+      ]
+    },
+    "IntentKind": {
+      "type": "string",
+      "enum": [
+        "action-item",
+        "decision",
+        "open-question",
+        "commitment"
+      ]
+    },
+    "OutputStatus": {
+      "description": "Output status markers.",
+      "type": "string",
+      "enum": [
+        "complete",
+        "no-speech",
+        "transcript-only",
+        "degraded"
+      ]
+    },
+    "ProcessingWarning": {
+      "description": "A non-fatal failure of a post-transcript pipeline step.",
+      "type": "object",
+      "required": [
+        "step",
+        "reason"
+      ],
+      "properties": {
+        "step": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "timeout_secs": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        },
+        "message": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "Visibility": {
+      "type": "string",
+      "enum": [
+        "private",
+        "team"
+      ]
+    }
+  },
+  "$id": "https://useminutes.app/schema/meeting.schema.json"
+}
