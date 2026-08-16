@@ -1,21 +1,34 @@
 name: Release
 
+# Two independent triggers, deliberately decoupled:
+#
+#   push to main      -> release-please opens/updates the release PR, and on merge tags the
+#                        release and publishes a GitHub Release.
+#   release published -> npm-publish builds and publishes that exact tag to npm.
+#
+# npm-publish used to be gated on `needs.release-please.outputs.release_created`. That output
+# name is mode-dependent — non-manifest mode emits `release_created`, manifest mode emits
+# `releases_created` — and reading the wrong one yields an empty string, which SKIPS the job
+# without failing the run. A skipped job renders as a green tick, so the break is invisible.
+# Keying off the GitHub Release itself removes that entire class of failure: if a release exists,
+# it gets published, no matter how it was created.
+
 on:
   push:
     branches: [main]
+  release:
+    types: [published]
 
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
+  contents: read
 
 jobs:
   release-please:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    outputs:
-      # Manifest mode emits `releases_created` (plural); the singular `release_created` only
-      # exists in non-manifest mode and is empty here, which silently skips npm-publish.
-      release_created: ${{ steps.release.outputs.releases_created }}
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/create-github-app-token@v2
         id: app-token
@@ -33,14 +46,16 @@ jobs:
           manifest-file: .release-please-manifest.json
 
   npm-publish:
-    needs: release-please
-    if: ${{ needs.release-please.outputs.release_created == 'true' }}
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+      id-token: write # OIDC trusted publishing; there is no NPM_TOKEN secret
     steps:
+      # Checks out the release tag, not main — publish exactly what was released.
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
