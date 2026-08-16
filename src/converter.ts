@@ -39,7 +39,13 @@ export function convertMeeting(
   const creatorName = resolvePersonName(meeting.people?.creator);
   const allPeople = [...new Set([creatorName, ...attendeeNames].filter(Boolean))] as string[];
 
-  const status: MinutesFrontmatter["status"] = hasTranscript ? "complete" : "no-speech";
+  // Detect narrative content from the CONVERTED markdown, not the ProseMirror structure: an
+  // "empty" ProseMirror doc still has nodes, so a structural check reports content that isn't there.
+  const summaryMd = toMarkdown(enhanced).trim();
+  const notesMd = toMarkdown(meeting.notes ?? null).trim();
+  const hasNarrative = summaryMd.length > 0 || notesMd.length > 0;
+
+  const status = resolveStatus(hasTranscript, hasNarrative);
 
   const speakerMap = buildSpeakerMap(hasTranscript, creatorName);
   const calSummary = meeting.google_calendar_event?.summary;
@@ -61,10 +67,27 @@ export function convertMeeting(
   if (insights?.decisions?.length) frontmatter.decisions = insights.decisions;
   if (insights?.intents?.length) frontmatter.intents = insights.intents;
 
-  const body = buildBody(enhanced, meeting.notes, transcript);
+  const body = buildBody(summaryMd, notesMd, transcript);
   const slug = buildSlug(date, title);
 
   return { frontmatter, body, slug };
+}
+
+/**
+ * Map what we actually produced onto Minutes' OutputStatus.
+ *
+ * `transcript-only` means the file carries a transcript and nothing else — no AI summary and no
+ * human notes. Reporting that as `complete` overstates what the consumer received.
+ *
+ * Minutes also defines `degraded`, for a post-transcript pipeline step that failed. This tool has
+ * no such step and never emits it, so it is deliberately absent from MinutesFrontmatter["status"].
+ */
+function resolveStatus(
+  hasTranscript: boolean,
+  hasNarrative: boolean,
+): MinutesFrontmatter["status"] {
+  if (!hasTranscript) return "no-speech";
+  return hasNarrative ? "complete" : "transcript-only";
 }
 
 function toLocalDate(utcIso: string): string {
@@ -131,19 +154,14 @@ function buildSpeakerMap(hasTranscript: boolean, creatorName: string | null): Sp
   ];
 }
 
-function buildBody(
-  enhanced: ProseMirrorDoc | null,
-  notesRaw: ProseMirrorDoc | null | undefined,
-  transcript: GranolaUtterance[],
-): string {
+/** Takes already-converted markdown so the status check and the body cannot disagree. */
+function buildBody(summaryMd: string, notesMd: string, transcript: GranolaUtterance[]): string {
   const sections: string[] = [];
 
-  const summaryMd = toMarkdown(enhanced).trim();
   if (summaryMd) {
     sections.push(`## Summary\n\n${summaryMd}`);
   }
 
-  const notesMd = toMarkdown(notesRaw ?? null).trim();
   if (notesMd) {
     sections.push(`## Notes\n\n${notesMd}`);
   }

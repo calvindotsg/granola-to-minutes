@@ -160,13 +160,46 @@ describe("convertMeeting", () => {
       null,
     );
 
-    it("sets status to complete", () => {
-      expect(result.frontmatter.status).toBe("complete");
+    it("sets status to transcript-only when there is no summary and no notes", () => {
+      expect(result.frontmatter.status).toBe("transcript-only");
     });
 
     it("body contains Transcript but no Summary", () => {
       expect(result.body).toContain("## Transcript");
       expect(result.body).not.toContain("## Summary");
+    });
+
+    it("stays complete when human notes exist without an AI summary", () => {
+      const withNotes = convertMeeting(
+        makeMeeting({
+          google_calendar_event: null,
+          notes: makeProseMirrorDoc([
+            { type: "paragraph", content: [{ type: "text", text: "Handwritten note" }] },
+          ]),
+        }),
+        transcript,
+        null,
+        null,
+      );
+
+      expect(withNotes.frontmatter.status).toBe("complete");
+      expect(withNotes.body).toContain("## Notes");
+    });
+
+    it("stays transcript-only when notes are structurally present but empty", () => {
+      // An "empty" ProseMirror doc still has nodes — a structural check would wrongly see content.
+      const emptyNotes = convertMeeting(
+        makeMeeting({
+          google_calendar_event: null,
+          notes: makeProseMirrorDoc([{ type: "paragraph", content: [] }]),
+        }),
+        transcript,
+        null,
+        null,
+      );
+
+      expect(emptyNotes.frontmatter.status).toBe("transcript-only");
+      expect(emptyNotes.body).not.toContain("## Notes");
     });
 
     it("calculates duration from transcript timestamps", () => {
