@@ -32,7 +32,7 @@ CLI migration tool that exports [Granola](https://granola.ai) meeting data — A
 
 ## Prerequisites
 
-- **Node.js** >= 20
+- **Node.js** >= 22.12
 - **[granola-cli](https://github.com/magarcia/granola-cli)** (community-built, not affiliated with Granola Labs) — `pnpm add -g granola-cli && granola auth login`
 - **Claude Code** (optional) — for structured extraction of action items, decisions, and intents from AI summaries
 
