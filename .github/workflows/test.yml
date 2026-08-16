@@ -7,8 +7,21 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  # The `main-protection` ruleset requires a status check whose context is exactly
+  # `test`, with no bypass actors. A matrix job publishes one check run per leg
+  # (`test (22)`, `test (24)`, ...), so nothing would ever report the bare `test`
+  # context and every PR would hang on "Expected — waiting for status".
+  # The matrix therefore runs under a different name, and the `test` job below
+  # fans it in. Do not give this job a static `name: test` instead: three check
+  # runs sharing one context resolve to the most recent report, so a failing leg
+  # can be masked by a later-finishing passing one.
+  test-matrix:
+    name: node ${{ matrix.node-version }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24, 26]
     steps:
       - uses: actions/checkout@v4
 
@@ -16,7 +29,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -26,3 +39,14 @@ jobs:
       - run: pnpm build
 
       - run: pnpm test:cov
+
+  # Required status check for `main`. Keep this job id exactly `test`.
+  test:
+    needs: test-matrix
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify every matrix leg passed
+        run: |
+          echo "test-matrix result: ${{ needs.test-matrix.result }}"
+          [ "${{ needs.test-matrix.result }}" = "success" ]
