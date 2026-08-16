@@ -137,12 +137,10 @@ describe("Layer 1: convertMeeting output satisfies the Minutes frontmatter contr
     expectValidContract(frontmatter);
   });
 
-  it("transcript present, no summary/notes/insights: status is complete", () => {
-    // NOT "transcript-only" — converter.ts only ever emits complete | no-speech. Asserted
-    // explicitly so this scenario cannot be mistaken for coverage of the third status value.
+  it("transcript present, no summary/notes/insights: status is transcript-only", () => {
     const { frontmatter } = convertMeeting(makeMeeting({ notes: null }), transcript, null, null);
 
-    expect(frontmatter.status).toBe("complete");
+    expect(frontmatter.status).toBe("transcript-only");
     expect(frontmatter.action_items).toBeUndefined();
     expectValidContract(frontmatter);
   });
