@@ -1,0 +1,29 @@
+{
+  "$comment": "Upstream artifacts watched by .github/workflows/contract-drift.yml via scripts/check-contract-drift.mjs. See PROVENANCE.md for why three sources are needed rather than one.",
+  "upstreamVersion": "0.25.1",
+  "pinnedOn": "2026-08-16",
+  "sources": [
+    {
+      "name": "published schema",
+      "url": "https://raw.githubusercontent.com/silverstein/minutes/main/schema/meeting.schema.json",
+      "compare": "file",
+      "path": "tests/contract/minutes-frontmatter.schema.json",
+      "why": "The artifact we validate against. Lagging indicator: nothing upstream regenerates it, so this only fires the day someone finally reruns `minutes schema`. When it does fire, refresh the vendored copy."
+    },
+    {
+      "name": "generated schema snapshot",
+      "url": "https://raw.githubusercontent.com/silverstein/minutes/main/crates/core/src/snapshots/minutes_core__markdown__tests__json_schema_generates_valid_schema.snap",
+      "compare": "sha256",
+      "stripInstaHeader": true,
+      "sha256": "fdf044364bbd253bf4245978e32ec818f1cbae22ca1000957bf4bb4b84823fa1",
+      "why": "Leading indicator. Generated from minutes_core::markdown::Frontmatter and kept honest by upstream CI via insta, so it moves when the real contract moves. Already 32 properties against the published file's 18."
+    },
+    {
+      "name": "reader Frontmatter types",
+      "url": "https://raw.githubusercontent.com/silverstein/minutes/main/crates/reader/src/types.rs",
+      "compare": "sha256",
+      "sha256": "b32f39d2e52adba54978d2ffe842fd7b3e2b78f4116b542e9ce261f33187d168",
+      "why": "Source of truth for speaker-map.overlay.json, and for the crate that actually parses the files this tool writes. Nothing else watches the overlay, so without this it would rot invisibly."
+    }
+  ]
+}
