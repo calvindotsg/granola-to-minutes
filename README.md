@@ -150,18 +150,36 @@ calendar_event: Weekly Sync
 4. Optionally extracts structured action items/decisions via Claude
 5. Writes Minutes-native markdown files with proper frontmatter
 
+## Minutes compatibility
+
+Verified against **Minutes 0.25.1**.
+
+Every commit runs `tests/contract/`, which validates this tool's output against the [frontmatter schema Minutes publishes](https://useminutes.app/schema/meeting.schema.json) — both the generated frontmatter object and a file written to disk and read back the way Minutes reads it. Compatibility here is demonstrated, not asserted.
+
+A separate [drift workflow](./.github/workflows/contract-drift.yml) watches three upstream artifacts — the published schema, the generated schema snapshot that upstream CI keeps current, and the reader's `Frontmatter` types — and opens an issue when any of them moves. See [`tests/contract/PROVENANCE.md`](./tests/contract/PROVENANCE.md) for why all three are needed.
+
+| Frontmatter `status` | When this tool emits it |
+|---|---|
+| `complete` | Transcript plus an AI summary and/or human notes |
+| `transcript-only` | Transcript, but no summary and no notes |
+| `no-speech` | No transcript |
+
+Minutes also defines `degraded`, for a post-transcript pipeline step that failed. This tool has no such step and never emits it.
+
 ## See Also
 
 Minutes has a built-in file-based import — `minutes import granola` — that reads from `~/.granola-archivist/output/` without any API calls. See the [comparison table](https://github.com/silverstein/minutes#want-transcripts-and-ai-summaries) in the Minutes README for when to use each tool.
 
 ## Testing
 
-Tests use [Vitest](https://vitest.dev/) with v8 coverage. Coverage threshold is 90% (85% for branches).
+Tests use [Vitest](https://vitest.dev/) with v8 coverage. Coverage threshold is 90% (85% for branches). CI runs on Node 22, 24, and 26.
 
 ```bash
 pnpm test:cov    # run with coverage report
 pnpm test:watch  # watch mode for development
 ```
+
+`tests/unit/` and `tests/integration/` cover this tool's own behaviour; `tests/contract/` covers the [Minutes compatibility](#minutes-compatibility) contract.
 
 ## Contributing
 
