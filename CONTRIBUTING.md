@@ -46,7 +46,17 @@ curl -sSL -o tests/contract/minutes-frontmatter.schema.json \
 pnpm test
 ```
 
-Then update the version, date, and SHA-256 in [`tests/contract/PROVENANCE.md`](./tests/contract/PROVENANCE.md). If the refresh adds a new `format`, register it in `contract.test.ts` — ajv runs in strict mode and throws on formats it does not know.
+Then update the version, date, and SHA-256 in [`tests/contract/PROVENANCE.md`](./tests/contract/PROVENANCE.md) **and re-pin the hashes in [`tests/contract/upstream-watch.json`](./tests/contract/upstream-watch.json)** in the same change. If the refresh adds a new `format`, register it in `contract.test.ts` — ajv runs in strict mode and throws on formats it does not know.
+
+### Drift monitoring
+
+`.github/workflows/contract-drift.yml` compares three pinned upstream artifacts against what Minutes serves today, and opens a deduplicated issue when any of them moves. Run the same check locally:
+
+```bash
+node scripts/check-contract-drift.mjs   # exit 0 in sync, 1 drift, 2 upstream unreachable
+```
+
+It runs weekly, on every push to `main`, and on demand. The push trigger is load-bearing: **GitHub disables scheduled workflows on public repos after 60 days of repository inactivity**, and this repo has gone quiet that long before. If that happens, GitHub shows a banner on the Actions tab — re-enable the workflow from there.
 
 ## Commit Conventions
 

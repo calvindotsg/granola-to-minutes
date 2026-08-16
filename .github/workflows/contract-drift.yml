@@ -1,0 +1,70 @@
+name: Contract drift
+
+# Watches the Minutes frontmatter contract for upstream movement.
+#
+# `push` is not redundant with `schedule`. GitHub disables scheduled workflows on public repos
+# after 60 days without repository activity, and this repo has already gone ~120 days quiet once
+# (2026-04-10 → 2026-08-08) — the cron would die exactly when it was most needed. Every merge to
+# main re-arms that clock, and gives a drift check on the repo's real cadence for free.
+#
+# If the repo does go quiet past 60 days, GitHub disables the cron and shows a banner on the
+# Actions tab; re-enable it from there.
+#
+# Deliberately NOT part of the required `test` check: a PR must never fail because of a network
+# blip or an upstream change unrelated to that PR.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays, 06:17 UTC
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: contract-drift
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Compare pinned upstream artifacts
+        id: drift
+        run: |
+          set +e
+          node scripts/check-contract-drift.mjs > report.md 2> fetch-errors.log
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          cat fetch-errors.log
+
+      # Exit 2 means we could not reach upstream. That is not drift and must not open an issue.
+      - name: Note unreachable upstream
+        if: steps.drift.outputs.status == '2'
+        run: |
+          echo "::warning::Could not reach upstream to check contract drift; skipping."
+          cat fetch-errors.log >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Open or update the drift issue
+        if: steps.drift.outputs.status == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: "Minutes frontmatter contract has drifted upstream"
+        run: |
+          existing=$(gh issue list --state open --search "$TITLE in:title" --json number,title \
+            --jq "[.[] | select(.title == env.TITLE)] | .[0].number // empty")
+          if [ -n "$existing" ]; then
+            echo "Updating existing issue #$existing"
+            gh issue comment "$existing" --body-file report.md
+          else
+            gh issue create --title "$TITLE" --body-file report.md
+          fi
