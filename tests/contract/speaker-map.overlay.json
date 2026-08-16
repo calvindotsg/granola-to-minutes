@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/calvindotsg/granola-to-minutes/tests/contract/speaker-map.overlay.json",
+  "title": "SpeakerMapOverlay",
+  "description": "Covers speaker_map, which minutes-frontmatter.schema.json has no property for even though minutes_reader::types::Frontmatter declares it. Transcribed from crates/reader/src/types.rs at Minutes 0.25.1. See PROVENANCE.md.",
+  "type": "object",
+  "properties": {
+    "speaker_map": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SpeakerAttribution" }
+    }
+  },
+  "$defs": {
+    "SpeakerAttribution": {
+      "type": "object",
+      "properties": {
+        "speaker_label": { "type": "string" },
+        "name": { "type": "string" },
+        "confidence": { "$ref": "#/$defs/Confidence" },
+        "source": { "$ref": "#/$defs/AttributionSource" }
+      },
+      "required": ["speaker_label", "name", "confidence", "source"],
+      "additionalProperties": false
+    },
+    "Confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "AttributionSource": {
+      "description": "Upstream also accepts an untagged Unknown(String) so hand-edited files stay readable. Closed here on purpose: this tool only ever emits \"deterministic\", so anything else is our bug.",
+      "type": "string",
+      "enum": [
+        "deterministic",
+        "llm",
+        "enrollment",
+        "manual",
+        "ml-bleed-degraded",
+        "stem-recovery"
+      ]
+    }
+  }
+}

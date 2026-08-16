@@ -60,7 +60,7 @@ These are non-obvious decisions and gotchas not discoverable by reading the code
 
 **Runtime:** commander, gray-matter
 **Dev:** TypeScript 6, Biome v2, Vitest + @vitest/coverage-v8
-**Testing:** `pnpm test:cov` -- 75% coverage threshold, unit tests in `tests/unit/`, integration tests in `tests/integration/`
+**Testing:** `pnpm test:cov` -- 90% coverage threshold (85% branches); unit tests in `tests/unit/`, integration tests in `tests/integration/`, Minutes contract tests in `tests/contract/`
 
 ## Reusable Patterns
 

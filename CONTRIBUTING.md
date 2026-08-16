@@ -24,11 +24,29 @@ Biome runs on both `src/` and `tests/`. Fix all lint errors before committing.
 
 ```bash
 pnpm test           # run tests
-pnpm test:cov       # run with coverage (75% threshold)
+pnpm test:cov       # run with coverage (90% threshold)
 pnpm test:watch     # watch mode
 ```
 
 All new code should include tests. Pure functions go in `tests/unit/`, anything requiring mocked I/O goes in `tests/integration/`.
+
+### The Minutes contract suite
+
+`tests/contract/` checks that what this tool writes still satisfies [Minutes](https://github.com/silverstein/minutes), the consumer of its output. It validates against a vendored copy of the schema Minutes publishes, in two layers: the `convertMeeting()` object, and a file written by the real `writeMinutesFile()` then read back the way Minutes reads it.
+
+If you change anything that affects frontmatter — `src/converter.ts`, `src/config.ts`, `src/writer.ts`, or `src/types.ts` — run `pnpm test` and expect this suite to have an opinion.
+
+### Refreshing the vendored Minutes schema
+
+`tests/contract/minutes-frontmatter.schema.json` is a byte-identical copy of upstream and must stay that way, so drift diffs are readable. Do not hand-edit it. To refresh:
+
+```bash
+curl -sSL -o tests/contract/minutes-frontmatter.schema.json \
+  https://raw.githubusercontent.com/silverstein/minutes/main/schema/meeting.schema.json
+pnpm test
+```
+
+Then update the version, date, and SHA-256 in [`tests/contract/PROVENANCE.md`](./tests/contract/PROVENANCE.md). If the refresh adds a new `format`, register it in `contract.test.ts` — ajv runs in strict mode and throws on formats it does not know.
 
 ## Commit Conventions
 

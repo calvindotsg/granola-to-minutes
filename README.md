@@ -94,7 +94,7 @@ granola-to-minutes export --json
 | `pnpm build` | Compile TypeScript |
 | `pnpm check` | Lint with Biome |
 | `pnpm test` | Run test suite |
-| `pnpm test:cov` | Run tests with coverage (75% threshold) |
+| `pnpm test:cov` | Run tests with coverage (90% threshold) |
 | `pnpm test:watch` | Run tests in watch mode |
 | `pnpm format` | Auto-format source files |
 
@@ -156,7 +156,7 @@ Minutes has a built-in file-based import — `minutes import granola` — that r
 
 ## Testing
 
-Tests use [Vitest](https://vitest.dev/) with v8 coverage. Coverage threshold is 75%.
+Tests use [Vitest](https://vitest.dev/) with v8 coverage. Coverage threshold is 90% (85% for branches).
 
 ```bash
 pnpm test:cov    # run with coverage report
