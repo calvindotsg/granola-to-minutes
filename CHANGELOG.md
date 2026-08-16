@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.5.0](https://github.com/calvindotsg/granola-to-minutes/compare/v0.4.3...v0.5.0) (2026-08-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **repo:** drops Node 20 (EOL 2026-04-30); commander 15 requires >=22.12.0
+
+### Features
+
+* **src:** report transcript-only status when a meeting has no summary ([#30](https://github.com/calvindotsg/granola-to-minutes/issues/30)) ([97efdb1](https://github.com/calvindotsg/granola-to-minutes/commit/97efdb15f9f250a1ced9266381d195e207b99185))
+
+
+### Tests
+
+* **src:** validate output against the Minutes frontmatter contract ([#27](https://github.com/calvindotsg/granola-to-minutes/issues/27)) ([3f0e108](https://github.com/calvindotsg/granola-to-minutes/commit/3f0e10839697b1d6b25039e237a302624b52c95e))
+
+
+### Documentation
+
+* **root:** correct the 1Password path in the npm one-off recipe ([#23](https://github.com/calvindotsg/granola-to-minutes/issues/23)) ([a85e87c](https://github.com/calvindotsg/granola-to-minutes/commit/a85e87c4622f227645a85148ccba79385fd652fb))
+* **root:** record verified Minutes compatibility ([#31](https://github.com/calvindotsg/granola-to-minutes/issues/31)) ([36d5cf9](https://github.com/calvindotsg/granola-to-minutes/commit/36d5cf911b707537f0a020a784c6dee839105a9b))
+* **root:** warn against npm login for local development ([#22](https://github.com/calvindotsg/granola-to-minutes/issues/22)) ([7516696](https://github.com/calvindotsg/granola-to-minutes/commit/7516696c77d5f042ac86dc5d112bc92a62aec75e))
+
+
+### Miscellaneous
+
+* **repo:** require Node &gt;= 22.12 and upgrade the toolchain ([#25](https://github.com/calvindotsg/granola-to-minutes/issues/25)) ([5629226](https://github.com/calvindotsg/granola-to-minutes/commit/5629226034841071c2289c1734a2458e76cf16d3))
+
+
+### CI/CD
+
+* **github:** make release-please actually read its config file ([#33](https://github.com/calvindotsg/granola-to-minutes/issues/33)) ([a6914a5](https://github.com/calvindotsg/granola-to-minutes/commit/a6914a5a481c5c317f81ab7be58d0ae0610f6a04))
+* **github:** run CI on Node 22, 24, 26 behind a test fan-in gate ([#24](https://github.com/calvindotsg/granola-to-minutes/issues/24)) ([8d9130a](https://github.com/calvindotsg/granola-to-minutes/commit/8d9130a13bb5ec2903dba1a6a5ee9d97af8c6360))
+* **github:** update actions off the deprecated Node 20 runtime ([#29](https://github.com/calvindotsg/granola-to-minutes/issues/29)) ([e897646](https://github.com/calvindotsg/granola-to-minutes/commit/e897646aa3c2f04e187e76e6f2d4545c4fed4dd9))
+* **github:** watch the Minutes frontmatter contract for upstream drift ([#28](https://github.com/calvindotsg/granola-to-minutes/issues/28)) ([278f46d](https://github.com/calvindotsg/granola-to-minutes/commit/278f46df4f38c6a63eb6394e697df06880bcfd0e))
+
 ## [0.4.3](https://github.com/calvindotsg/granola-to-minutes/compare/v0.4.2...v0.4.3) (2026-04-10)
 
 
