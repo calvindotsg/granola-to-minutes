@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+# Every build step runs third-party dev-dependency code, and the repository default for
+# GITHUB_TOKEN is `write`. Nothing in this workflow writes to the repo, so nothing here needs a
+# token that could.
+permissions:
+  contents: read
+
 jobs:
   # The `main-protection` ruleset requires a status check whose context is exactly
   # `test`, with no bypass actors. A matrix job publishes one check run per leg
@@ -23,11 +29,11 @@ jobs:
       matrix:
         node-version: [22, 24, 26]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ matrix.node-version }}
           cache: pnpm
@@ -50,3 +56,43 @@ jobs:
         run: |
           echo "test-matrix result: ${{ needs.test-matrix.result }}"
           [ "${{ needs.test-matrix.result }}" = "success" ]
+
+  # Reports, never gates. Deliberately NOT a dependency of `test`, and deliberately always exit 0.
+  #
+  # A gate here would be red on every PR forever and teach everyone to ignore it: `pnpm audit`
+  # currently reports 14 advisories, and even `--prod` reports 3 -- all of them gray-matter's
+  # pinned js-yaml 3.x. Those three are the parser CVEs, and they are unreachable because the only
+  # js-yaml `load` path this tool can reach is gray-matter parsing its own body argument, which
+  # `writeMinutesFile` guards against (see CLAUDE.md). The rest are dev-only: vitest/vite/postcss
+  # never ship and never see untrusted input.
+  #
+  # The actual alerting mechanism is Dependabot security alerts, which dedupe and track state.
+  # This job's job is to put the current count in front of a reviewer on every PR, so that "3
+  # known, unreachable" turning into "4" is visible rather than something someone has to go and
+  # look for.
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Report advisories
+        run: |
+          {
+            echo "## Runtime dependencies (\`--prod\`)"
+            echo '```'
+            pnpm audit --prod 2>&1 || true
+            echo '```'
+            echo "## All dependencies"
+            echo '```'
+            pnpm audit 2>&1 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

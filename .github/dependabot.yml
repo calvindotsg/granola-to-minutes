@@ -1,0 +1,28 @@
+version: 2
+
+# Every `uses:` in .github/workflows/ is pinned to a 40-character commit SHA, which is what makes
+# an upstream tag move (the tj-actions/changed-files scenario, CVE-2025-30066) a non-event here.
+# The cost of that is pins going stale silently, so Dependabot exists to bump them on a reviewed
+# PR — it rewrites both the SHA and the trailing `# vN` comment. Without this, pinning trades a
+# supply-chain risk for an unpatched-dependency one.
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+      include: scope
+
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      # One PR for the dev toolchain rather than eight. Runtime deps (commander, gray-matter)
+      # stay ungrouped so they get individual review.
+      dev-dependencies:
+        dependency-type: development
