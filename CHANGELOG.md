@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.1](https://github.com/calvindotsg/granola-to-minutes/compare/v0.5.0...v0.5.1) (2026-08-20)
+
+
+### Bug Fixes
+
+* **cli:** resolve binaries in-process and give usage errors their own exit code ([#41](https://github.com/calvindotsg/granola-to-minutes/issues/41)) ([b668547](https://github.com/calvindotsg/granola-to-minutes/commit/b66854730232037337d68e6c4245110c8d001cf9))
+* **extractor:** confine the claude subprocess and rebuild its output ([#37](https://github.com/calvindotsg/granola-to-minutes/issues/37)) ([ab481b1](https://github.com/calvindotsg/granola-to-minutes/commit/ab481b17aea4d54ab6b7f155a961d832c635ff13))
+* **writer:** stop a hostile title forging frontmatter keys downstream ([#38](https://github.com/calvindotsg/granola-to-minutes/issues/38)) ([a462928](https://github.com/calvindotsg/granola-to-minutes/commit/a46292839b067be496cbe5e8ba46ce6becbebb04))
+
+
+### CI/CD
+
+* **github:** pin every action to a commit SHA and gate the publish path ([#39](https://github.com/calvindotsg/granola-to-minutes/issues/39)) ([abc0967](https://github.com/calvindotsg/granola-to-minutes/commit/abc09670b4fe3a7c3fd55181ba6e2ca24f34e192))
+
 ## [0.5.0](https://github.com/calvindotsg/granola-to-minutes/compare/v0.4.3...v0.5.0) (2026-08-16)
 
 
