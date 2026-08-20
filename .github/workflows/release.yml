@@ -30,7 +30,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/create-github-app-token@v2
+      - uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         id: app-token
         with:
           app-id: ${{ vars.RELEASE_PLEASE_APP_ID }}
@@ -38,7 +38,7 @@ jobs:
 
       # Do NOT pass `release-type` here. Supplying it runs the action in non-manifest mode, which
       # ignores release-please-config.json entirely — the release type is declared in that file.
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
         id: release
         with:
           token: ${{ steps.app-token.outputs.token }}
@@ -48,20 +48,35 @@ jobs:
   npm-publish:
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
+    # GitHub loads the workflow file from the *release tag's* tree, and npm's trusted-publisher
+    # config pins owner + repo + workflow filename -- not the ref, and not the file contents. So a
+    # credential that can push a tag can reach the registry without transiting main-protection.
+    # This environment is the gate: it requires a human approval before the OIDC token is minted.
+    # Add the same environment name to npm's trusted-publisher config -- that is the one control
+    # enforced OUTSIDE this repository, so it still holds if the repository itself is compromised.
+    environment: npm-publish
     permissions:
       contents: read
       id-token: write # OIDC trusted publishing; there is no NPM_TOKEN secret
     steps:
       # Checks out the release tag, not main — publish exactly what was released.
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.release.tag_name }}
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
+      # KNOWN GAP, deliberately not closed here. M-2's remediation also called for holding
+      # `id-token: write` only in a job whose steps run over an already-built artifact. As written,
+      # install and build execute in the job that holds it, so ACTIONS_ID_TOKEN_REQUEST_URL/TOKEN
+      # are in scope for any dependency lifecycle script. pnpm 10 blocks those by default (verified
+      # against a malicious tarball during the audit), which is why this is a gap rather than a
+      # live hole -- but SHA-pinning closes the *actions* half of the supply chain, not this half.
+      # Closing it means splitting build and publish into two jobs with an artifact handoff, which
+      # can only be validated by a real release. Tracked as a follow-up, not forgotten.
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
       - run: npm publish --provenance --access public

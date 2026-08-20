@@ -32,9 +32,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
 
@@ -54,17 +54,29 @@ jobs:
           echo "::warning::Could not reach upstream to check contract drift; skipping."
           cat fetch-errors.log >> "$GITHUB_STEP_SUMMARY"
 
+      # Selecting the issue by TITLE alone made this channel capturable: a title is not a namespace,
+      # and any GitHub user could pre-create one with that exact string and receive every future
+      # drift report in a thread they control.
+      #
+      # The label is the fix, and on its own. Applying a label needs triage permission, so an
+      # outside user cannot attach `contract-drift` to an issue they open -- which is exactly the
+      # property the title lacked. Deliberately NOT also filtering on --author: `app/github-actions`
+      # is GitHub *search* syntax and returns nothing through `gh issue list --author`, which would
+      # silently leave `existing` empty and open a duplicate issue on every drift run.
+      #
+      # The `contract-drift` label must exist -- `gh issue create --label` errors on a missing one.
       - name: Open or update the drift issue
         if: steps.drift.outputs.status == '1'
         env:
           GH_TOKEN: ${{ github.token }}
           TITLE: "Minutes frontmatter contract has drifted upstream"
+          LABEL: contract-drift
         run: |
-          existing=$(gh issue list --state open --search "$TITLE in:title" --json number,title \
-            --jq "[.[] | select(.title == env.TITLE)] | .[0].number // empty")
+          existing=$(gh issue list --state open --label "$LABEL" \
+            --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
             echo "Updating existing issue #$existing"
             gh issue comment "$existing" --body-file report.md
           else
-            gh issue create --title "$TITLE" --body-file report.md
+            gh issue create --title "$TITLE" --label "$LABEL" --body-file report.md
           fi
