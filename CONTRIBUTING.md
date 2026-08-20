@@ -76,6 +76,12 @@ Use [Conventional Commits v1.0.0](https://www.conventionalcommits.org/) with req
 | `repo` | `package.json`, `biome.json`, `vitest.config.ts`, `.gitignore` | Repository configuration |
 | `github` | `.github/workflows/**`, `release-please-config.json` | GitHub Actions and release config |
 | `root` | `README.md`, `CLAUDE.md`, `CONTRIBUTING.md`, `llms.txt`, `docs/` | Root-level documentation |
+| `deps` | any dependency or action version bump | Reserved for Dependabot — see below |
+
+`deps` is the scope [`.github/dependabot.yml`](./.github/dependabot.yml) generates (`prefix: ci` / `prefix: chore` plus
+`include: scope`), so Dependabot PRs arrive titled `ci(deps):` or `chore(deps):` and are merged under that
+title unchanged. Keeping it distinct from `github` and `repo` is the point: it separates version bumps from
+hand-written changes to the same files in the changelog. Do not use `deps` for a change you wrote yourself.
 
 **Examples:**
 
