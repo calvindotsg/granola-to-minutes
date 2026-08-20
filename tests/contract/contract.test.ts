@@ -53,6 +53,27 @@ function splitFrontmatter(content: string): { frontmatter: string; body: string 
   return { frontmatter: content.slice(3, fmEnd), body: content.slice(bodyStart) };
 }
 
+/**
+ * Faithful port of `extract_field` from Minutes' crates/core/src/markdown.rs.
+ *
+ * This is a LINE SCANNER, not a YAML parser: the first trimmed line beginning with `<key>:` wins,
+ * and everything after the colon is the value. Ported for the same reason as split_frontmatter —
+ * the sharp edge IS the contract. It drives the FTS date column, the dashboard, and the
+ * text-import walk, so what it returns is what those surfaces believe.
+ */
+function extractField(frontmatter: string, key: string): string | null {
+  for (const line of frontmatter.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith(`${key}:`)) {
+      return trimmed
+        .slice(key.length + 1)
+        .trim()
+        .replace(/^['"]|['"]$/g, "");
+    }
+  }
+  return null;
+}
+
 let validatePublished: ReturnType<Ajv2020["compile"]>;
 let validateOverlay: ReturnType<Ajv2020["compile"]>;
 
@@ -248,6 +269,98 @@ describe("Layer 2: the written file survives the round trip Minutes actually per
     // Assert the writer's own behaviour directly, so a future change that emits an unquoted
     // timestamp is caught here rather than absorbed by the schema choice above.
     expect(raw).toMatch(/^date: '/m);
+  });
+
+  it("the ported extract_field is faithful: an indented fold line wins over the real key", () => {
+    // Control for the test below. Hand-written, because our writer can no longer produce it —
+    // without this, a regression that stopped folding would make that test vacuously pass.
+    const folded = [
+      "title: >-",
+      "  Partner sync review",
+      "  date: 2099-12-31T00:00:00+08:00",
+      "date: '2026-03-17T14:30:00+08:00'",
+    ].join("\n");
+
+    expect(extractField(folded, "date")).toBe("2099-12-31T00:00:00+08:00");
+  });
+
+  it("a hostile long title cannot forge a frontmatter key", () => {
+    // js-yaml folds any scalar over 78 characters into a `>-` block whose continuation lines are
+    // indented by two spaces — exactly what extract_field's trim() removes. The padding here puts
+    // `date:` at the start of a continuation line. Driven through the real convertMeeting and
+    // writeMinutesFile on purpose: a standalone matter.stringify cannot regress-guard the sink.
+    const title = `Partner sync review ${"x".repeat(53)} date: 2099-12-31T00:00:00+08:00 and more`;
+    const { frontmatter, body } = convertMeeting(
+      makeMeeting({ title }),
+      transcript,
+      enhanced,
+      sampleInsights,
+    );
+    const { frontmatter: block } = writeAndRead(frontmatter, body);
+
+    // The line reader and the YAML parser have to agree. Before lineWidth: -1 they did not.
+    const parsed = load(block, { schema: JSON_SCHEMA }) as Record<string, unknown>;
+    expect(extractField(block, "date")).toBe("2026-03-17T14:30:00+08:00");
+    expect(extractField(block, "date")).toBe(parsed.date);
+
+    // Every top-level key still reads back as its own value. Counting lines would be the wrong
+    // assertion: `status:` and `source:` legitimately recur inside action_items and speaker_map
+    // entries, and the line scanner takes the FIRST match — which is the top-level one only for
+    // as long as no folded scalar gets in ahead of it.
+    const expected: Record<string, unknown> = {
+      title,
+      type: "meeting",
+      date: "2026-03-17T14:30:00+08:00",
+      duration: frontmatter.duration,
+      source: "granola-reimport",
+      status: "complete",
+    };
+    for (const [key, value] of Object.entries(expected)) {
+      expect([key, extractField(block, key)]).toEqual([key, value]);
+    }
+  });
+
+  it("a newline in the title cannot forge a frontmatter key either", () => {
+    // The sibling test above covers js-yaml FOLDING a long scalar. This covers the other half:
+    // a value that already contains a newline is emitted as a `|-` block with the same column-2
+    // continuation lines, and lineWidth: -1 does nothing about it. Caught by review after the
+    // folding fix landed -- the two paths look identical to extract_field and only one of them
+    // is about line width.
+    const title = "Weekly sync\ndate: 2099-12-31T00:00:00+08:00\nstatus: done";
+    const { frontmatter, body } = convertMeeting(
+      makeMeeting({ title }),
+      transcript,
+      enhanced,
+      sampleInsights,
+    );
+    const { frontmatter: block } = writeAndRead(frontmatter, body);
+    const parsed = load(block, { schema: JSON_SCHEMA }) as Record<string, unknown>;
+
+    expect(extractField(block, "date")).toBe("2026-03-17T14:30:00+08:00");
+    expect(extractField(block, "status")).toBe("complete");
+    expect(extractField(block, "date")).toBe(parsed.date);
+    expect(extractField(block, "status")).toBe(parsed.status);
+  });
+
+  it("no attacker-influenced field can put a key at the start of any frontmatter line", () => {
+    // Every field a third party can write, hostile at once: the calendar-event summary and the
+    // attendee names travel the same road as the title.
+    const hostile = "x\nduration: 99h\nsource: forged";
+    const { frontmatter, body } = convertMeeting(
+      makeMeeting({
+        title: hostile,
+        google_calendar_event: { id: "c1", summary: hostile },
+        people: { creator: { name: hostile }, attendees: [{ name: hostile }] },
+      }),
+      transcript,
+      enhanced,
+      sampleInsights,
+    );
+    const { frontmatter: block } = writeAndRead(frontmatter, body);
+    const parsed = load(block, { schema: JSON_SCHEMA }) as Record<string, unknown>;
+
+    expect(extractField(block, "duration")).toBe(parsed.duration);
+    expect(extractField(block, "source")).toBe("granola-reimport");
   });
 
   it("the file read back off disk still satisfies the contract", () => {

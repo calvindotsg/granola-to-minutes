@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { toMarkdown } from "../../src/prosemirror.js";
+import type { ProseMirrorNode } from "../../src/types.js";
 import { makeProseMirrorDoc } from "../fixtures.js";
 
 describe("toMarkdown", () => {
@@ -197,5 +198,57 @@ describe("toMarkdown", () => {
   it("handles unknown node type without content", () => {
     const doc = makeProseMirrorDoc([{ type: "unknownEmpty" }]);
     expect(toMarkdown(doc)).toBe("");
+  });
+});
+
+describe("resource bounds", () => {
+  it("clamps a heading level to 6 rather than repeating # a billion times", () => {
+    // attrs is untyped third-party JSON. Unclamped, this ~90-byte node expands to a
+    // multi-hundred-megabyte string.
+    const doc = makeProseMirrorDoc([
+      { type: "heading", attrs: { level: 1_000_000_000 }, content: [{ type: "text", text: "X" }] },
+    ]);
+
+    expect(toMarkdown(doc)).toBe("###### X");
+  });
+
+  it("clamps a negative or zero heading level up to 1", () => {
+    const doc = makeProseMirrorDoc([
+      { type: "heading", attrs: { level: -5 }, content: [{ type: "text", text: "A" }] },
+      { type: "heading", attrs: { level: 0 }, content: [{ type: "text", text: "B" }] },
+    ]);
+
+    expect(toMarkdown(doc)).toBe("# A\n\n# B");
+  });
+
+  it("ignores a non-numeric heading level", () => {
+    const doc = makeProseMirrorDoc([
+      {
+        type: "heading",
+        attrs: { level: "9999" as unknown as number },
+        content: [{ type: "text", text: "C" }],
+      },
+      { type: "heading", attrs: { level: Number.NaN }, content: [{ type: "text", text: "D" }] },
+    ]);
+
+    expect(toMarkdown(doc)).toBe("###### C\n\n# D");
+  });
+
+  it("stops descending at the depth cap instead of blowing the stack", () => {
+    let node: ProseMirrorNode = { type: "text", text: "bottom" };
+    for (let i = 0; i < 5_000; i++) {
+      node = { type: "blockquote", content: [node] };
+    }
+
+    expect(() => toMarkdown(makeProseMirrorDoc([node]))).not.toThrow();
+  });
+
+  it("still renders a document nested well within the cap", () => {
+    let node: ProseMirrorNode = { type: "text", text: "bottom" };
+    for (let i = 0; i < 5; i++) {
+      node = { type: "blockquote", content: [node] };
+    }
+
+    expect(toMarkdown(makeProseMirrorDoc([node]))).toContain("bottom");
   });
 });

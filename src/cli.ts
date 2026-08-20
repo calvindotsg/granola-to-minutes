@@ -34,7 +34,7 @@ program
   .option("--output-dir <path>", "Output directory", join(homedir(), "meetings"))
   .option("--dry-run", "Preview without writing files", false)
   .option("--skip-llm", "Skip Claude extraction of action items/decisions", false)
-  .option("--note-id <id>", "Export a single meeting by UUID or prefix")
+  .option("--note-id <id>", "Export a single meeting by UUID, or a prefix of at least 4 characters")
   .option(
     "--since <date>",
     "Only export meetings created after this ISO 8601 date (e.g. 2026-03-01)",

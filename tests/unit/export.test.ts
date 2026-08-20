@@ -30,6 +30,7 @@ vi.mock("../../src/writer.js", () => ({
 import { runExport } from "../../src/export.js";
 import { listMeetings } from "../../src/granola.js";
 import type { ExportOptions } from "../../src/types.js";
+import { makeMeeting } from "../fixtures.js";
 
 const mockListMeetings = vi.mocked(listMeetings);
 
@@ -111,6 +112,54 @@ describe("runExport", () => {
       expect(consoleSpy).not.toHaveBeenCalled();
 
       vi.restoreAllMocks();
+    });
+  });
+
+  describe("--note-id validation", () => {
+    it("rejects an empty --note-id instead of exporting every meeting", async () => {
+      // The guard used to be `if (noteId)`, so `--note-id ""` fell straight through the filter
+      // and exported the whole account -- the opposite of what the flag asks for.
+      mockListMeetings.mockResolvedValue([makeMeeting(), makeMeeting({ id: "other-id" })]);
+
+      await expect(runExport(makeOptions({ noteId: "" }))).rejects.toThrow(
+        /--note-id needs at least 4 characters/,
+      );
+    });
+
+    it("rejects a prefix too short to select one meeting", async () => {
+      await expect(runExport(makeOptions({ noteId: "ab" }))).rejects.toThrow(
+        /--note-id needs at least 4 characters/,
+      );
+    });
+
+    it("accepts a usable prefix", async () => {
+      mockListMeetings.mockResolvedValue([makeMeeting({ id: "test-meeting-id-001" })]);
+
+      await expect(runExport(makeOptions({ noteId: "test-meeting" }))).resolves.not.toThrow();
+    });
+
+    it("still reports a genuinely unknown id as not found", async () => {
+      mockListMeetings.mockResolvedValue([makeMeeting({ id: "test-meeting-id-001" })]);
+
+      await expect(runExport(makeOptions({ noteId: "nope-nope" }))).rejects.toThrow(/not found/);
+    });
+  });
+
+  describe("terminal safety", () => {
+    it("strips control characters from a meeting title before logging it", async () => {
+      const stderrSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      mockListMeetings.mockResolvedValue([
+        makeMeeting({ title: "Quarterly\u001B]0;pwned\u0007 review" }),
+      ]);
+
+      await runExport(makeOptions());
+
+      const logged = stderrSpy.mock.calls.map((call) => call.join(" ")).join("\n");
+      expect(logged).toContain("Quarterly");
+      expect(logged).not.toContain("\u001B");
+      expect(logged).not.toContain("\u0007");
+
+      stderrSpy.mockRestore();
     });
   });
 });
