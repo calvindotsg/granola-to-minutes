@@ -1,19 +1,29 @@
-import { afterEach, beforeEach, describe, expect, it, type MockedFunction, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockedFunction,
+  vi,
+} from "vitest";
 
 // Mock child_process before importing extractor
 vi.mock("node:child_process", () => ({
-  execFile: vi.fn(),
   spawn: vi.fn(),
 }));
 
 import type { ChildProcess } from "node:child_process";
-import { execFile, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { statSync } from "node:fs";
+import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { Writable } from "node:stream";
+import { INSIGHTS_SCHEMA, LLM } from "../../src/config.js";
 
-const mockExecFile = execFile as MockedFunction<typeof execFile>;
 const mockSpawn = spawn as MockedFunction<typeof spawn>;
 
 // We need to re-import extractor for each test to reset module-level state
@@ -73,11 +83,33 @@ function createInertProcess(): ChildProcess {
   return proc;
 }
 
-function claudeIsInstalled(path = "/usr/local/bin/claude") {
-  mockExecFile.mockImplementation((_cmd, _args, callback: any) => {
-    callback(null, { stdout: `${path}\n`, stderr: "" });
-    return {} as any;
-  });
+/**
+ * Put a real executable named `claude` on PATH.
+ *
+ * The extractor walks PATH in-process rather than shelling out to `which`, so there is no
+ * subprocess left to mock — the fixture has to be an actual file with the exec bit set.
+ */
+let binDir: string;
+let emptyDir: string;
+const realPath = process.env.PATH;
+
+beforeAll(() => {
+  binDir = mkdtempSync(join(tmpdir(), "gtm-bin-"));
+  writeFileSync(join(binDir, "claude"), "#!/bin/sh\n", { mode: 0o755 });
+  emptyDir = mkdtempSync(join(tmpdir(), "gtm-empty-"));
+});
+
+afterAll(() => {
+  rmSync(binDir, { recursive: true, force: true });
+  rmSync(emptyDir, { recursive: true, force: true });
+});
+
+function claudeIsInstalled() {
+  process.env.PATH = binDir;
+}
+
+function claudeIsMissing() {
+  process.env.PATH = emptyDir;
 }
 
 /** The argv the extractor handed to spawn, as a flat array. */
@@ -94,12 +126,16 @@ describe("extractInsights", () => {
     // Restore unconditionally: the SIGKILL test enables fake timers, and if it fails before its
     // own cleanup line every later async test hangs on a timer that never advances.
     vi.useRealTimers();
+    process.env.PATH = realPath;
   });
 
   beforeEach(() => {
     vi.resetModules();
-    // clearAllMocks, not resetAllMocks: history has to go (mock.calls[0] must mean *this* test's
-    // first call) but the implementations set in the nested beforeEach blocks must survive.
+    // History has to go: mock.calls[0] must mean *this* test's first call, and several tests
+    // below depend on that. resetAllMocks would work equally well — the parent beforeEach runs
+    // before every nested one, so nothing set there can be reset out from under a test.
+    // clearAllMocks is simply the narrower tool. `restoreMocks` in vitest.config.ts is not a
+    // substitute: it acts on vi.spyOn spies, and these come from the vi.mock factory above.
     vi.clearAllMocks();
   });
 
@@ -111,11 +147,7 @@ describe("extractInsights", () => {
   });
 
   it("returns null when claude CLI is not available", async () => {
-    // Make 'which claude' fail
-    mockExecFile.mockImplementation((_cmd, _args, callback: any) => {
-      callback(new Error("not found"));
-      return {} as any;
-    });
+    claudeIsMissing();
 
     const extractInsights = await importExtractor();
     const result = await extractInsights("Meeting summary content", "Test Meeting");
@@ -177,6 +209,27 @@ describe("extractInsights", () => {
       expect(args).not.toContain("--append-system-prompt");
     });
 
+    it("keeps spawn's own timeout as the second, independent bound", async () => {
+      // Two bounds, deliberately: spawn's `timeout` raises SIGTERM at the deadline, and the kill
+      // timer SIGKILLs killGraceMs later. The timer has its own test; without this one the first
+      // bound can be deleted silently, leaving a well-behaved child unbounded until the grace ends.
+      const extractInsights = await importExtractor();
+      await extractInsights("summary", "Title");
+
+      expect(spawnOptions().timeout).toBe(LLM.timeout);
+    });
+
+    it("asks for JSON against the declared schema", async () => {
+      // parseInsights re-validates everything, so this flag is not the security boundary — but
+      // dropping it turns structured_output into prose and every extraction silently returns null.
+      const extractInsights = await importExtractor();
+      await extractInsights("summary", "Title");
+
+      const args = spawnArgs();
+      expect(args[args.indexOf("--output-format") + 1]).toBe("json");
+      expect(JSON.parse(args[args.indexOf("--json-schema") + 1])).toEqual(INSIGHTS_SCHEMA);
+    });
+
     it("pins cwd to a private empty dir, not to the shared world-writable temp dir", async () => {
       const extractInsights = await importExtractor();
       await extractInsights("summary", "Title");
@@ -198,19 +251,11 @@ describe("extractInsights", () => {
       expect(mockSpawn.mock.calls[0][2]?.cwd).toBe(mockSpawn.mock.calls[1][2]?.cwd);
     });
 
-    it("spawns the absolute path resolved by `which`, not the bare name", async () => {
+    it("spawns the absolute path resolved from PATH, not the bare name", async () => {
       const extractInsights = await importExtractor();
       await extractInsights("summary", "Title");
 
-      expect(mockSpawn.mock.calls[0][0]).toBe("/usr/local/bin/claude");
-    });
-
-    it("falls back to the bare name when `which` returns a non-absolute path", async () => {
-      claudeIsInstalled("claude");
-      const extractInsights = await importExtractor();
-      await extractInsights("summary", "Title");
-
-      expect(mockSpawn.mock.calls[0][0]).toBe("claude");
+      expect(mockSpawn.mock.calls[0][0]).toBe(join(binDir, "claude"));
     });
 
     it("fences the untrusted meeting text inside an unguessable tag", async () => {

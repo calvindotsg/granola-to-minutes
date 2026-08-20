@@ -193,6 +193,24 @@ describe("Layer 1: convertMeeting output satisfies the Minutes frontmatter contr
     expectValidContract(frontmatter);
   });
 
+  it("every emitted item status is one Minutes will act on", () => {
+    // ajv cannot catch this: in the published schema, ActionItem.status and Intent.status are a
+    // bare {"type": "string"} with no enum — only OutputStatus carries one. Upstream silently
+    // ignores anything other than "open"/"done", so a bad value disappears from
+    // `minutes find-open-actions` with no error on either side. extractor.ts enforces the enum for
+    // the LLM path; this is the contract-level backstop for everything else.
+    const { frontmatter } = convertMeeting(makeMeeting(), transcript, enhanced, sampleInsights);
+
+    expect(frontmatter.action_items?.length).toBeGreaterThan(0);
+    expect(frontmatter.intents?.length).toBeGreaterThan(0);
+    for (const item of frontmatter.action_items ?? []) {
+      expect(["open", "done"]).toContain(item.status);
+    }
+    for (const intent of frontmatter.intents ?? []) {
+      expect(["open", "done"]).toContain(intent.status);
+    }
+  });
+
   it("title carrying a colon and non-ASCII characters", () => {
     const meeting = makeMeeting({ title: "Q2: Pricing — 東京 sync (café)" });
     const { frontmatter } = convertMeeting(meeting, transcript, enhanced, sampleInsights);
