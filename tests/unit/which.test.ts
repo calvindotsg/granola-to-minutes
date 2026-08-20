@@ -38,9 +38,16 @@ describe("resolveExecutable", () => {
   });
 
   it("ignores relative PATH entries, which would resolve out of the cwd", () => {
-    // execvp honours these; we deliberately do not. Half the point of resolving up front is that
-    // the working directory is not a place to accept a binary from.
-    process.env.PATH = `.${delimiter}${dir}`;
+    // execvp honours these; we deliberately do not — the working directory is not a place to
+    // accept a binary from. The fixture has to be a relative directory that REALLY CONTAINS the
+    // name: pointing "." at a cwd with no match resolves identically with and without the guard,
+    // so such a test passes either way. node_modules/.bin is relative and genuinely populated.
+    process.env.PATH = "node_modules/.bin";
+    expect(resolveExecutable("vitest")).toBeNull();
+  });
+
+  it("still finds the name when an absolute entry follows a relative one", () => {
+    process.env.PATH = `node_modules/.bin${delimiter}${dir}`;
     writeFileSync(join(dir, "tool"), "#!/bin/sh\n", { mode: 0o755 });
     expect(resolveExecutable("tool")).toBe(join(dir, "tool"));
   });

@@ -26,3 +26,17 @@ updates:
       # stay ungrouped so they get individual review.
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # gray-matter 4.x pins js-yaml ^3.13.1 and calls safeDump, which js-yaml 4 removed. Forcing
+      # the transitive bump breaks the writer outright -- CI catches it, but the PR reopens every
+      # week (see #40, which failed all three Node legs on a lockfile-only change).
+      #
+      # The three advisories against js-yaml 3.x are unreachable here: the only js-yaml `load` path
+      # this tool can reach is gray-matter parsing its own body argument, and writeMinutesFile
+      # guards that. The real remediation is replacing gray-matter, not bumping its dependency.
+      #
+      # This also freezes major bumps of the direct js-yaml devDependency used by the contract
+      # suite. That is an accepted cost: it is already on the current major, and one dependency
+      # name cannot be split across the two roles here.
+      - dependency-name: js-yaml
+        update-types: ["version-update:semver-major"]
