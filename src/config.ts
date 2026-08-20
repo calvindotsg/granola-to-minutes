@@ -14,6 +14,8 @@ export const SOURCE_LABEL = "granola-reimport" as const;
 export const LLM = {
   model: "haiku",
   timeout: 60_000,
+  // Grace period after spawn's SIGTERM deadline before the extractor sends SIGKILL itself.
+  killGraceMs: 5_000,
 } as const;
 
 /** Speaker attribution defaults (Granola provides microphone vs system, not individual IDs) */
@@ -42,7 +44,14 @@ export const COLLISION = {
   maxAttempts: 99,
 } as const;
 
-/** JSON schema for structured LLM extraction of meeting insights */
+/**
+ * JSON schema for structured LLM extraction of meeting insights.
+ *
+ * `additionalProperties: false` everywhere is deliberate: the schema is a request to the
+ * model, and a closed one keeps unexpected keys out of the response in the first place.
+ * `parseInsights` in extractor.ts still rebuilds the result from a whitelist — the schema is
+ * not a trust boundary on its own.
+ */
 export const INSIGHTS_SCHEMA = {
   type: "object",
   properties: {
@@ -57,6 +66,7 @@ export const INSIGHTS_SCHEMA = {
           status: { type: "string", enum: ["open", "done"] },
         },
         required: ["assignee", "task", "status"],
+        additionalProperties: false,
       },
     },
     decisions: {
@@ -68,6 +78,7 @@ export const INSIGHTS_SCHEMA = {
           topic: { type: "string" },
         },
         required: ["text"],
+        additionalProperties: false,
       },
     },
     intents: {
@@ -85,8 +96,10 @@ export const INSIGHTS_SCHEMA = {
           by_date: { type: "string" },
         },
         required: ["kind", "what", "status"],
+        additionalProperties: false,
       },
     },
   },
   required: ["action_items", "decisions", "intents"],
+  additionalProperties: false,
 } as const;
