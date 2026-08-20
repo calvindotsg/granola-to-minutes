@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.4](https://github.com/calvindotsg/granola-to-minutes/compare/v0.5.3...v0.5.4) (2026-08-20)
+
+
+### Documentation
+
+* **root:** record the Node 20 runner deadline behind the two release-path action bumps ([#53](https://github.com/calvindotsg/granola-to-minutes/issues/53)) ([6720459](https://github.com/calvindotsg/granola-to-minutes/commit/6720459c5268fae59a5095369e9b5718e1684f60))
+
+
+### CI/CD
+
+* **deps:** bump actions/create-github-app-token from 2.2.2 to 3.2.0 ([#44](https://github.com/calvindotsg/granola-to-minutes/issues/44)) ([7f894b0](https://github.com/calvindotsg/granola-to-minutes/commit/7f894b086e2adb479c71093c3e2a841f5ccf28a6))
+* **deps:** bump googleapis/release-please-action from 4.4.1 to 5.0.0 ([ff4ff8d](https://github.com/calvindotsg/granola-to-minutes/commit/ff4ff8ded21aec605359c480c7307bfb197918cb))
+
 ## [0.5.3](https://github.com/calvindotsg/granola-to-minutes/compare/v0.5.2...v0.5.3) (2026-08-20)
 
 
