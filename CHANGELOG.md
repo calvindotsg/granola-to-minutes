@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.2](https://github.com/calvindotsg/granola-to-minutes/compare/v0.5.1...v0.5.2) (2026-08-20)
+
+
+### Bug Fixes
+
+* **release:** empty the component with package-name, not component ([#46](https://github.com/calvindotsg/granola-to-minutes/issues/46)) ([49da5cd](https://github.com/calvindotsg/granola-to-minutes/commit/49da5cd628eac8d6f3bc3ebc6a40468307cf2d4d))
+
+
+### CI/CD
+
+* **github:** build the release tarball outside the job that holds the OIDC token ([#45](https://github.com/calvindotsg/granola-to-minutes/issues/45)) ([047dd39](https://github.com/calvindotsg/granola-to-minutes/commit/047dd394d7bff3cfc0f4d9f355d58db3de1860c0))
+
 ## [0.5.1](https://github.com/calvindotsg/granola-to-minutes/compare/v0.5.0...v0.5.1) (2026-08-20)
 
 

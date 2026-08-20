@@ -1,6 +1,6 @@
 {
   "name": "granola-to-minutes",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "CLI migration tool that exports Granola meeting data — AI summaries, transcripts, and human notes — to Minutes-native markdown with YAML frontmatter",
   "type": "module",
   "bin": {
