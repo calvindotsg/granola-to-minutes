@@ -1,14 +1,12 @@
-import { execFile, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { promisify } from "node:util";
 import { INSIGHTS_SCHEMA, LLM } from "./config.js";
 import type { ActionItem, Decision, Intent, MeetingInsights } from "./types.js";
 import { errorMessage, stripControlChars } from "./utils.js";
-
-const execFileAsync = promisify(execFile);
+import { resolveExecutable } from "./which.js";
 
 const SCHEMA_JSON = JSON.stringify(INSIGHTS_SCHEMA);
 
@@ -40,16 +38,11 @@ let claudeAvailable: boolean | null = null;
 // between the availability check and the spawn could substitute a different binary.
 let claudeBin = "claude";
 
-async function checkClaude(): Promise<boolean> {
+function checkClaude(): boolean {
   if (claudeAvailable !== null) return claudeAvailable;
-  try {
-    const { stdout } = await execFileAsync("which", ["claude"]);
-    const resolved = stdout.split("\n")[0].trim();
-    if (resolved.startsWith("/")) claudeBin = resolved;
-    claudeAvailable = true;
-  } catch {
-    claudeAvailable = false;
-  }
+  const resolved = resolveExecutable("claude");
+  if (resolved !== null) claudeBin = resolved;
+  claudeAvailable = resolved !== null;
   return claudeAvailable;
 }
 
@@ -63,7 +56,7 @@ export async function extractInsights(
 ): Promise<MeetingInsights | null> {
   if (!summary.trim()) return null;
 
-  if (!(await checkClaude())) {
+  if (!checkClaude()) {
     console.error("Warning: claude CLI not found, skipping LLM extraction");
     return null;
   }

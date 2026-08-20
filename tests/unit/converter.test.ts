@@ -336,6 +336,14 @@ describe("convertMeeting", () => {
       expect(result.frontmatter.date).toBe("1970-01-01T00:00:00+08:00");
     });
 
+    it("uses 'untitled' when the title sanitizes away to nothing", () => {
+      // Distinct from an empty title, which never reaches this branch — convertMeeting substitutes
+      // "Untitled" first. Only an all-punctuation title empties titleSlug, and without the
+      // fallback that yields "2026-03-17-.md".
+      const result = convertMeeting(makeMeeting({ title: "!!! ??? ***" }), [], null, null);
+      expect(result.slug).toBe("2026-03-17-untitled.md");
+    });
+
     it("keeps path separators out of the slug when created_at is hostile", () => {
       // created_at is Granola's server-side timestamp, so no counted attacker can set it. The
       // sentinel exists so that if one ever could, buildSlug still cannot be walked out of

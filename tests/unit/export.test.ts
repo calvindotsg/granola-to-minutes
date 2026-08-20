@@ -1,15 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock all external dependencies before importing export
-vi.mock("node:child_process", () => ({
-  execFileSync: vi.fn(),
-}));
-
 vi.mock("node:fs", () => ({
   existsSync: vi.fn(() => true),
   mkdirSync: vi.fn(),
   accessSync: vi.fn(),
-  constants: { W_OK: 2 },
+  // resolveExecutable stats each PATH entry. Without statSync here the prerequisite check finds no
+  // granola and throws GranolaNotInstalledError before any assertion in this file is reached.
+  statSync: vi.fn(() => ({ isFile: () => true })),
+  constants: { W_OK: 2, X_OK: 1 },
 }));
 
 vi.mock("../../src/granola.js", () => ({

@@ -9,9 +9,11 @@ import type { ExportOptions } from "./types.js";
 import {
   errorMessage,
   GranolaNotInstalledError,
+  InvalidOptionError,
   MeetingNotFoundError,
   stripControlChars,
 } from "./utils.js";
+import { resolveExecutable } from "./which.js";
 import { writeMinutesFile } from "./writer.js";
 
 function log(quiet: boolean, ...args: unknown[]): void {
@@ -22,11 +24,34 @@ function log(quiet: boolean, ...args: unknown[]): void {
 export async function runExport(options: ExportOptions): Promise<void> {
   const { outputDir, dryRun, skipLlm, noteId, since, verbose, json } = options;
 
+  // 0. Validate the options themselves first. Everything below this point costs an auth round-trip
+  // and a full account listing, and a mistyped flag should not pay for either.
+  //
+  // Guard on `undefined`, not truthiness: `--note-id ""` used to fall through and export the entire
+  // account, which is the opposite of what the flag asks for. A prefix shorter than
+  // NOTE_ID.minPrefixLength cannot meaningfully select one meeting either.
+  const notePrefix = noteId?.trim();
+  if (notePrefix !== undefined && notePrefix.length < NOTE_ID.minPrefixLength) {
+    throw new InvalidOptionError(
+      `--note-id needs at least ${NOTE_ID.minPrefixLength} characters ` +
+        "(a full meeting UUID, or a prefix of one).",
+    );
+  }
+
+  let sinceDate: number | undefined;
+  if (since !== undefined) {
+    sinceDate = new Date(since).getTime();
+    if (Number.isNaN(sinceDate)) {
+      throw new InvalidOptionError(
+        `Invalid --since date: "${since}". Use ISO 8601 format (e.g. 2026-03-01).`,
+      );
+    }
+  }
+
   // 1. Validate prerequisites
-  try {
-    const { execFileSync } = await import("node:child_process");
-    execFileSync("which", ["granola"]);
-  } catch {
+  // Resolved in-process rather than by spawning `which`: `which` is itself a bare name resolved
+  // against PATH, absent from minimal container images, and outside /usr/bin on NixOS.
+  if (resolveExecutable("granola") === null) {
     throw new GranolaNotInstalledError();
   }
   log(json, "Checking granola-cli authentication...");
@@ -53,28 +78,14 @@ export async function runExport(options: ExportOptions): Promise<void> {
   // Filter out deleted meetings
   meetings = meetings.filter((m) => !m.deleted_at);
 
-  if (noteId !== undefined) {
-    // Guard on `undefined`, not truthiness: `--note-id ""` used to fall through this block and
-    // export the entire account, which is the opposite of what the flag asks for. A prefix
-    // shorter than NOTE_ID.minPrefixLength cannot meaningfully select one meeting either.
-    const prefix = noteId.trim();
-    if (prefix.length < NOTE_ID.minPrefixLength) {
-      throw new Error(
-        `--note-id needs at least ${NOTE_ID.minPrefixLength} characters ` +
-          "(a full meeting UUID, or a prefix of one).",
-      );
-    }
-    meetings = meetings.filter((m) => m.id === prefix || m.id.startsWith(prefix));
+  if (notePrefix !== undefined) {
+    meetings = meetings.filter((m) => m.id === notePrefix || m.id.startsWith(notePrefix));
     if (meetings.length === 0) {
-      throw new MeetingNotFoundError(prefix);
+      throw new MeetingNotFoundError(notePrefix);
     }
   }
 
-  if (since) {
-    const sinceDate = new Date(since).getTime();
-    if (Number.isNaN(sinceDate)) {
-      throw new Error(`Invalid --since date: "${since}". Use ISO 8601 format (e.g. 2026-03-01).`);
-    }
+  if (sinceDate !== undefined) {
     meetings = meetings.filter((m) => new Date(m.created_at).getTime() >= sinceDate);
   }
 
@@ -174,7 +185,7 @@ export async function runExport(options: ExportOptions): Promise<void> {
   );
 
   // 6. Note about cache-only meetings not exported
-  if (!noteId) {
+  if (notePrefix === undefined) {
     log(json, "\nNote: Meetings older than ~30 days may have expired from Granola servers.");
     log(
       json,

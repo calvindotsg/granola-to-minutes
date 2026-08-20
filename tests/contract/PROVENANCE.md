@@ -50,3 +50,18 @@ Its `source` enum is deliberately **closed** to upstream's six named variants. U
 but *this tool* only ever emits `deterministic` (see `SPEAKERS` in `src/config.ts`). Validating our
 own output against the closed set is a correct tightening: if we ever emit something else, that is a
 bug on our side, not a contract change on theirs.
+
+
+## Known gap: item `status` is unconstrained in the published schema
+
+`$defs.ActionItem.status` and `$defs.Intent.status` are a bare `{"type": "string"}`. Only
+`OutputStatus` (the document-level `status`) carries an enum. So ajv will happily validate
+`action_items: [{ status: "wip" }]`, while upstream silently ignores anything that is not `open` or
+`done` — the item just disappears from `minutes find-open-actions`, with no error at either end.
+
+Two things cover it instead, and both are needed:
+
+- `extractor.ts` enforces the enum on the LLM path (`oneOf(entry.status, STATUSES)`).
+- `contract.test.ts` asserts it on the emitted frontmatter, for every other path.
+
+Do not assume `expectValidContract` catches a bad status. It does not, and it will not tell you so.

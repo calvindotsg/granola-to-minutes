@@ -6,7 +6,12 @@ import { join } from "node:path";
 import { Command } from "commander";
 import { runExport } from "./export.js";
 import type { ExportOptions } from "./types.js";
-import { GranolaAuthError, GranolaNotInstalledError, MeetingNotFoundError } from "./utils.js";
+import {
+  GranolaAuthError,
+  GranolaNotInstalledError,
+  InvalidOptionError,
+  MeetingNotFoundError,
+} from "./utils.js";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
@@ -63,6 +68,10 @@ program
         console.error(err.message);
         process.exit(2);
       }
+      if (err instanceof InvalidOptionError) {
+        console.error(err.message);
+        process.exit(3);
+      }
       if (err instanceof MeetingNotFoundError) {
         console.error(err.message);
         process.exit(4);
@@ -79,10 +88,12 @@ Prerequisites:
   claude (opt)   For structured extraction of action items/decisions
 
 Exit codes:
-  0  Success
-  1  granola-cli not installed
-  2  Granola authentication failed
-  4  Meeting not found
+  0    Success
+  1    granola-cli not installed, or an unexpected error
+  2    Granola authentication failed
+  3    Invalid option value
+  4    Meeting not found
+  130  Interrupted (Ctrl-C)
 
 Examples:
   $ granola-to-minutes export

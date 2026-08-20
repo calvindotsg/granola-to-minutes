@@ -39,3 +39,11 @@ export class MeetingNotFoundError extends Error {
     super(`Meeting ${noteId} not found`);
   }
 }
+
+/**
+ * A CLI option was given a value this tool cannot use.
+ *
+ * One shared class rather than one per flag: `--since` and `--note-id` fail the same way and map
+ * to the same exit code, so per-flag classes would be three-quarters boilerplate.
+ */
+export class InvalidOptionError extends Error {}

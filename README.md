@@ -74,7 +74,7 @@ granola-to-minutes export --dry-run
 # Skip LLM extraction
 granola-to-minutes export --skip-llm
 
-# Single meeting by UUID (prefix match)
+# Single meeting by UUID (or a prefix of at least 4 characters)
 granola-to-minutes export --note-id <uuid>
 
 # Only recent meetings

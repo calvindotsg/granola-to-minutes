@@ -1,3 +1,4 @@
+import matter from "gray-matter";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MinutesFrontmatter } from "../../src/types.js";
 
@@ -273,8 +274,13 @@ describe("writeMinutesFile", () => {
       expect(block).toContain("duration: 30");
     });
 
-    it("does not let a __proto__ key from nested data touch the prototype", () => {
+    it("does not let a __proto__ key from nested data become the object's prototype", () => {
+      // Bracket-assigning "__proto__" sets that object's prototype, not Object.prototype, and it
+      // does not change the emitted YAML either (js-yaml dumps own keys only). So asserting
+      // ({}).pwned or the file contents cannot fail — the only observable is the object handed to
+      // gray-matter. Assert there or the guard is untested.
       mockExistsSync.mockReturnValue(false);
+      const spy = vi.spyOn(matter, "stringify");
       const hostile = JSON.parse(
         '{"assignee":"A","task":"T","status":"open","__proto__":{"pwned":1}}',
       );
@@ -283,20 +289,30 @@ describe("writeMinutesFile", () => {
         "/out",
         "test.md",
         { ...baseFrontmatter, action_items: [hostile] },
-        "b",
+        "## Body",
         false,
       );
 
-      expect(({} as Record<string, unknown>).pwned).toBeUndefined();
+      const emitted = (spy.mock.calls[0][1] as Record<string, unknown>).action_items as object[];
+      expect(Object.getPrototypeOf(emitted[0])).toBe(Object.prototype);
+      expect(emitted[0]).toEqual({ assignee: "A", task: "T", status: "open" });
+      spy.mockRestore();
     });
 
     it("keeps a body that opens with --- away from gray-matter's own parser", () => {
+      // matter.stringify() parses its own body argument. Unguarded, `not:` is hoisted into the
+      // frontmatter block AND the body is discarded — so a toContain() check on the whole file
+      // passes in exactly the case this test exists to reject. Assert which side of the fence
+      // the line lands on instead.
       mockExistsSync.mockReturnValue(false);
-      writeMinutesFile("/out", "test.md", baseFrontmatter, "---\nnot: frontmatter", false);
+      writeMinutesFile("/out", "test.md", baseFrontmatter, "---\nnot: frontmatter\n", false);
 
       const raw = String(mockWriteFileSync.mock.calls[0][1]);
-      expect(raw).toContain("title: Test Meeting");
-      expect(raw).toContain("not: frontmatter");
+      const parsed = matter(raw);
+
+      expect(raw.split("\n")[1]).toBe("title: Test Meeting");
+      expect(parsed.data).not.toHaveProperty("not");
+      expect(parsed.content).toContain("not: frontmatter");
     });
   });
 });
