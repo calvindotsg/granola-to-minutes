@@ -1,44 +1,57 @@
 import type { ProseMirrorDoc, ProseMirrorNode } from "./types.js";
 
+/**
+ * ProseMirror headings are 1-6. `attrs` is untyped third-party JSON, so an unclamped
+ * `"#".repeat(level)` turns a ~90-byte node into a multi-hundred-megabyte string.
+ */
+const MAX_HEADING_LEVEL = 6;
+
+/** Depth cap for the recursive walk: a pathologically nested document blows the stack otherwise. */
+const MAX_DEPTH = 100;
+
 /** Convert a ProseMirror JSON document to a markdown string. */
 export function toMarkdown(doc: ProseMirrorDoc | null): string {
   if (!doc?.content) return "";
-  return doc.content.map((n) => nodeToMd(n)).join("\n\n");
+  return doc.content.map((n) => nodeToMd(n, 0)).join("\n\n");
 }
 
-function nodeToMd(node: ProseMirrorNode): string {
+function nodeToMd(node: ProseMirrorNode, depth: number): string {
+  if (depth > MAX_DEPTH) return "";
+  const next = depth + 1;
+
   switch (node.type) {
     case "heading": {
-      const lvl = (node.attrs?.level as number) || 1;
-      return `${"#".repeat(lvl)} ${inlineToMd(node.content)}`;
+      const level = Math.trunc(Number(node.attrs?.level)) || 1;
+      const clamped = Math.min(Math.max(level, 1), MAX_HEADING_LEVEL);
+      return `${"#".repeat(clamped)} ${inlineToMd(node.content, next)}`;
     }
     case "paragraph":
-      return inlineToMd(node.content);
+      return inlineToMd(node.content, next);
     case "bulletList":
-      return (node.content || []).map((li) => nodeToMd(li)).join("\n");
+      return (node.content || []).map((li) => nodeToMd(li, next)).join("\n");
     case "orderedList":
       return (node.content || [])
-        .map((li, i) => nodeToMd(li).replace(/^- /, `${i + 1}. `))
+        .map((li, i) => nodeToMd(li, next).replace(/^- /, `${i + 1}. `))
         .join("\n");
     case "listItem":
-      return `- ${(node.content || []).map((c) => nodeToMd(c)).join("\n  ")}`;
+      return `- ${(node.content || []).map((c) => nodeToMd(c, next)).join("\n  ")}`;
     case "blockquote":
-      return (node.content || []).map((c) => `> ${nodeToMd(c)}`).join("\n");
+      return (node.content || []).map((c) => `> ${nodeToMd(c, next)}`).join("\n");
     case "codeBlock": {
       const lang = (node.attrs?.language as string) || "";
-      return `\`\`\`${lang}\n${inlineToMd(node.content)}\n\`\`\``;
+      return `\`\`\`${lang}\n${inlineToMd(node.content, next)}\n\`\`\``;
     }
     case "horizontalRule":
       return "---";
     case "text":
       return applyMarks(node.text || "", node.marks);
     default:
-      return node.content ? node.content.map((c) => nodeToMd(c)).join("") : "";
+      return node.content ? node.content.map((c) => nodeToMd(c, next)).join("") : "";
   }
 }
 
-function inlineToMd(content?: ProseMirrorNode[]): string {
-  return content ? content.map((n) => nodeToMd(n)).join("") : "";
+function inlineToMd(content: ProseMirrorNode[] | undefined, depth: number): string {
+  return content ? content.map((n) => nodeToMd(n, depth)).join("") : "";
 }
 
 function applyMarks(text: string, marks?: Array<{ type: string }>): string {

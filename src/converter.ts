@@ -10,6 +10,9 @@ import type {
   SpeakerAttribution,
 } from "./types.js";
 
+/** Stand-in for a `created_at` that does not parse: sorts first and is filename-safe. */
+const UNPARSEABLE_DATE = `1970-01-01T00:00:00${TIMEZONE.label}`;
+
 export interface ConvertedMeeting {
   frontmatter: MinutesFrontmatter;
   body: string;
@@ -92,7 +95,11 @@ function resolveStatus(
 
 function toLocalDate(utcIso: string): string {
   const d = new Date(utcIso);
-  if (Number.isNaN(d.getTime())) return utcIso;
+  // Never return the raw input. This value flows into the filename through `buildSlug`, which
+  // splices its first 10 characters in with no sanitization — an unparseable `created_at` would
+  // carry `../` straight through and land the file outside --output-dir. Granola's server-side
+  // timestamp makes that unreachable today; the sentinel makes it unreachable by construction.
+  if (Number.isNaN(d.getTime())) return UNPARSEABLE_DATE;
   const local = new Date(d.getTime() + TIMEZONE.offsetMinutes * 60_000);
   const pad = (n: number) => String(n).padStart(2, "0");
   return (

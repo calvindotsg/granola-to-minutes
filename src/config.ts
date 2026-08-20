@@ -39,6 +39,12 @@ export const SLUG = {
   maxLength: 60,
 } as const;
 
+/** `--note-id` accepts a full meeting UUID or a prefix of one; shorter than this selects nothing
+ *  useful, and the empty string used to disable the filter entirely. */
+export const NOTE_ID = {
+  minPrefixLength: 4,
+} as const;
+
 /** File collision resolution limit */
 export const COLLISION = {
   maxAttempts: 99,

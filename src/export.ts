@@ -1,11 +1,17 @@
 import { accessSync, constants, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { NOTE_ID } from "./config.js";
 import { convertMeeting } from "./converter.js";
 import { extractInsights } from "./extractor.js";
 import { ensureAuth, getEnhanced, getTranscript, listMeetings } from "./granola.js";
 import { toMarkdown } from "./prosemirror.js";
 import type { ExportOptions } from "./types.js";
-import { errorMessage, GranolaNotInstalledError, MeetingNotFoundError } from "./utils.js";
+import {
+  errorMessage,
+  GranolaNotInstalledError,
+  MeetingNotFoundError,
+  stripControlChars,
+} from "./utils.js";
 import { writeMinutesFile } from "./writer.js";
 
 function log(quiet: boolean, ...args: unknown[]): void {
@@ -29,7 +35,9 @@ export async function runExport(options: ExportOptions): Promise<void> {
   // 2. Ensure output directory exists and is writable
   if (!dryRun) {
     if (!existsSync(outputDir)) {
-      mkdirSync(outputDir, { recursive: true });
+      // 0o700, not the default 0o755: the files inside are 0o600, but the *filenames* carry
+      // every meeting's title and date, and a world-readable directory hands those out.
+      mkdirSync(outputDir, { recursive: true, mode: 0o700 });
     }
     try {
       accessSync(outputDir, constants.W_OK);
@@ -45,10 +53,20 @@ export async function runExport(options: ExportOptions): Promise<void> {
   // Filter out deleted meetings
   meetings = meetings.filter((m) => !m.deleted_at);
 
-  if (noteId) {
-    meetings = meetings.filter((m) => m.id === noteId || m.id.startsWith(noteId));
+  if (noteId !== undefined) {
+    // Guard on `undefined`, not truthiness: `--note-id ""` used to fall through this block and
+    // export the entire account, which is the opposite of what the flag asks for. A prefix
+    // shorter than NOTE_ID.minPrefixLength cannot meaningfully select one meeting either.
+    const prefix = noteId.trim();
+    if (prefix.length < NOTE_ID.minPrefixLength) {
+      throw new Error(
+        `--note-id needs at least ${NOTE_ID.minPrefixLength} characters ` +
+          "(a full meeting UUID, or a prefix of one).",
+      );
+    }
+    meetings = meetings.filter((m) => m.id === prefix || m.id.startsWith(prefix));
     if (meetings.length === 0) {
-      throw new MeetingNotFoundError(noteId);
+      throw new MeetingNotFoundError(prefix);
     }
   }
 
@@ -76,7 +94,7 @@ export async function runExport(options: ExportOptions): Promise<void> {
 
   for (let i = 0; i < meetings.length; i++) {
     const meeting = meetings[i];
-    const label = meeting.title || "Untitled";
+    const label = stripControlChars(meeting.title || "Untitled");
     const progress = `[${i + 1}/${meetings.length}]`;
 
     try {
@@ -137,7 +155,9 @@ export async function runExport(options: ExportOptions): Promise<void> {
       log(json, `${progress} ${label}${flagStr} -> ${written}`);
     } catch (err) {
       stats.errors++;
-      console.error(`${progress} ERROR ${label}: ${errorMessage(err)}`);
+      // errorMessage carries child stderr verbatim (extractor.ts, granola.ts), so it is just as
+      // attacker-influenced as the label beside it.
+      console.error(`${progress} ERROR ${label}: ${stripControlChars(errorMessage(err))}`);
     }
   }
 

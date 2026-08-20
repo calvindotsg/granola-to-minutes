@@ -330,10 +330,22 @@ describe("convertMeeting", () => {
       expect(result.frontmatter.date).toBe("2026-03-18T00:30:00+08:00");
     });
 
-    it("returns original string for invalid date", () => {
+    it("returns a safe sentinel for an invalid date, never the raw input", () => {
       const meeting = makeMeeting({ created_at: "not-a-date" });
       const result = convertMeeting(meeting, [], null, null);
-      expect(result.frontmatter.date).toBe("not-a-date");
+      expect(result.frontmatter.date).toBe("1970-01-01T00:00:00+08:00");
+    });
+
+    it("keeps path separators out of the slug when created_at is hostile", () => {
+      // created_at is Granola's server-side timestamp, so no counted attacker can set it. The
+      // sentinel exists so that if one ever could, buildSlug still cannot be walked out of
+      // --output-dir: it splices date.slice(0, 10) into the filename unsanitized.
+      const meeting = makeMeeting({ created_at: "../../../etc/passwd" });
+      const result = convertMeeting(meeting, [], null, null);
+
+      expect(result.slug).not.toContain("/");
+      expect(result.slug).not.toContain("..");
+      expect(result.slug.startsWith("1970-01-01")).toBe(true);
     });
   });
 
