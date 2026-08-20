@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.3](https://github.com/calvindotsg/granola-to-minutes/compare/v0.5.2...v0.5.3) (2026-08-20)
+
+
+### Documentation
+
+* **root:** correct the merge policy and record why the PR title is load-bearing ([#52](https://github.com/calvindotsg/granola-to-minutes/issues/52)) ([b15a457](https://github.com/calvindotsg/granola-to-minutes/commit/b15a457d0f707f305b62c91b2d692830567693a6))
+* **root:** record that npm now enforces the npm-publish environment ([#49](https://github.com/calvindotsg/granola-to-minutes/issues/49)) ([23d9d82](https://github.com/calvindotsg/granola-to-minutes/commit/23d9d82b911813bfae86b145c895d771b5f30b0e))
+
+
+### Miscellaneous
+
+* **repo:** clear all 12 Dependabot alerts via lockfile re-resolution ([#51](https://github.com/calvindotsg/granola-to-minutes/issues/51)) ([1a56928](https://github.com/calvindotsg/granola-to-minutes/commit/1a5692894bbe5b101acb9ddf36784f866a074cc1))
+
 ## [0.5.2](https://github.com/calvindotsg/granola-to-minutes/compare/v0.5.1...v0.5.2) (2026-08-20)
 
 
