@@ -5,7 +5,7 @@
   "packages": {
     ".": {
       "release-type": "node",
-      "component": "",
+      "package-name": "",
       "bump-minor-pre-major": true,
       "changelog-sections": [
         { "type": "feat", "section": "Features" },
