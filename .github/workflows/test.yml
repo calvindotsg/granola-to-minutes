@@ -95,17 +95,21 @@ jobs:
 
   # Reports, never gates. Deliberately NOT a dependency of `test`, and deliberately always exit 0.
   #
-  # A gate here would be red on every PR forever and teach everyone to ignore it: `pnpm audit`
-  # currently reports 14 advisories, and even `--prod` reports 3 -- all of them gray-matter's
-  # pinned js-yaml 3.x. Those three are the parser CVEs, and they are unreachable because the only
-  # js-yaml `load` path this tool can reach is gray-matter parsing its own body argument, which
-  # `writeMinutesFile` guards against (see CLAUDE.md). The rest are dev-only: vitest/vite/postcss
-  # never ship and never see untrusted input.
+  # `pnpm audit` is clean as of 2026-08-20 -- both `--prod` and the full tree report zero. It was
+  # red on gray-matter's pinned js-yaml 3.x; upstream backported the merge-key and !!omap fixes to
+  # 3.15.0/3.15.1, which satisfy gray-matter's `^3.13.1`, so the whole set cleared on a lockfile
+  # bump. See .github/dependabot.yml for why the 3.x pin stays.
+  #
+  # Read the timeline before concluding a gate would have helped. Upstream was fast: 3.15.0 landed
+  # 11 days after the first advisory and 3.15.1 five days *before* the third was even published.
+  # The patched versions then sat unadopted here for seven weeks, and no Dependabot PR ever
+  # proposed them -- the one PR it did raise, #40, jumped the shared name to 5.3.0 and failed CI.
+  # Adoption took a human running `pnpm update`. A gate would have frozen `main` for those seven
+  # weeks over a fix that was one command away: it blocks the unrelated PRs, not the neglect.
   #
   # The actual alerting mechanism is Dependabot security alerts, which dedupe and track state.
-  # This job's job is to put the current count in front of a reviewer on every PR, so that "3
-  # known, unreachable" turning into "4" is visible rather than something someone has to go and
-  # look for.
+  # This job puts the current count in front of a reviewer on every PR. With the baseline at
+  # zero, any output at all in the block below is a regression worth reading.
   audit:
     runs-on: ubuntu-latest
     steps:

@@ -31,9 +31,18 @@ updates:
       # the transitive bump breaks the writer outright -- CI catches it, but the PR reopens every
       # week (see #40, which failed all three Node legs on a lockfile-only change).
       #
-      # The three advisories against js-yaml 3.x are unreachable here: the only js-yaml `load` path
-      # this tool can reach is gray-matter parsing its own body argument, and writeMinutesFile
-      # guards that. The real remediation is replacing gray-matter, not bumping its dependency.
+      # Staying on 3.x is no longer a security cost. Upstream backported the merge-key and !!omap
+      # fixes to 3.15.0/3.15.1, and `^3.13.1` accepts them, so all three advisories cleared on a
+      # plain `pnpm update` -- a *minor* bump this rule does not block. Replacing gray-matter is
+      # now a maintenance question (it last shipped in 2019), not a security one.
+      #
+      # Do not expect Dependabot to do that bump for you. `js-yaml` is two different things in
+      # this tree: a direct devDependency at ^5.3.0 (contract suite) and gray-matter's nested 3.x.
+      # One manifest entry cannot express both, and the nested copy has no manifest entry at all,
+      # so a version update sees only the shared name and proposes the latest -- which is what #40
+      # did. Security updates are enabled and unpaused, and still never proposed 3.15.1: the
+      # patched releases sat unadopted for seven weeks. Re-run `pnpm update` by hand when a
+      # js-yaml advisory appears and confirm with `pnpm why js-yaml` that the *nested* copy moved.
       #
       # This also freezes major bumps of the direct js-yaml devDependency used by the contract
       # suite. That is an accepted cost: it is already on the current major, and one dependency
