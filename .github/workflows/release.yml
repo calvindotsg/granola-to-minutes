@@ -1,10 +1,10 @@
 name: Release
 
-# Two independent triggers, deliberately decoupled:
+# Three jobs across two independent triggers, deliberately decoupled:
 #
 #   push to main      -> release-please opens/updates the release PR, and on merge tags the
 #                        release and publishes a GitHub Release.
-#   release published -> npm-publish builds and publishes that exact tag to npm.
+#   release published -> build packs that exact tag into a tarball, and npm-publish uploads it.
 #
 # npm-publish used to be gated on `needs.release-please.outputs.release_created`. That output
 # name is mode-dependent — non-manifest mode emits `release_created`, manifest mode emits
@@ -45,13 +45,87 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  npm-publish:
+  # M-2. Everything third-party -- pnpm, the whole dependency tree, tsc, vitest -- runs HERE, in a
+  # job that holds no `id-token: write` and declares no environment. ACTIONS_ID_TOKEN_REQUEST_URL
+  # and _TOKEN are therefore absent from the environment while that code executes, so a dependency
+  # lifecycle script has no npm-publishing credential to steal. `persist-credentials: false` keeps
+  # the checkout's GITHUB_TOKEN out of .git/config for the same reason -- nothing here uses git.
+  # The job's only output is a tarball.
+  build:
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      sha256: ${{ steps.pack.outputs.sha256 }}
+    steps:
+      # Checks out the release tag, not main — publish exactly what was released.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # These three used to run as package.json's `prepublishOnly`. npm runs that script only when
+      # the publish spec is a directory -- `if (spec.type === 'directory' && !ignoreScripts)` in
+      # npm/cli lib/commands/publish.js -- so publishing a pre-packed tarball skips it entirely.
+      # The release gate has to be spelled out here instead. `prepublishOnly` is deliberately kept
+      # in package.json as a local safety net and as the gate this workflow would fall back to if
+      # it were ever reverted; if you change it, change these steps to match.
+      - run: pnpm check
+
+      - run: pnpm test
+
+      - run: pnpm build
+
+      # `npm pack` and `npm publish <directory>` call the same libnpmpack with the same options --
+      # publish just keeps the bytes in memory instead of writing them to disk. So this is
+      # byte-for-byte the tarball `npm publish .` would have uploaded, and `npm publish <tarball>`
+      # ships it verbatim: libnpmpack re-packs only when `spec.type === 'directory'`, and for a
+      # file spec pacote returns the bytes as they are. Packing into an empty directory avoids
+      # parsing npm's stdout for the filename.
+      - id: pack
+        # `shell: bash` for `-o pipefail`: the default shell for `run` is `bash -e`, under which a
+        # failing sha256sum would leave `cut` reporting success and write an empty digest.
+        shell: bash
+        run: |
+          mkdir -p "${RUNNER_TEMP}/pack"
+          npm pack --silent --pack-destination "${RUNNER_TEMP}/pack"
+          mv "${RUNNER_TEMP}"/pack/*.tgz package.tgz
+          sha256="$(sha256sum package.tgz | cut -d ' ' -f 1)"
+          echo "packed sha256: ${sha256}"
+          echo "sha256=${sha256}" >> "${GITHUB_OUTPUT}"
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: npm-tarball
+          path: package.tgz
+          # GitHub cancels a pending deployment after 30 days, so anything shorter could strand a
+          # release that is still approvable. The artifact holds only what npm will publish from a
+          # public tag, so a longer window exposes nothing new.
+          retention-days: 30
+          if-no-files-found: error
+          # Makes "Re-run all jobs" work; without it the second upload fails on a name collision.
+          overwrite: true
+
+  npm-publish:
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
     # GitHub loads the workflow file from the *release tag's* tree, and npm's trusted-publisher
-    # config pins owner + repo + workflow filename -- not the ref, and not the file contents. So a
-    # credential that can push a tag can reach the registry without transiting main-protection.
-    # This environment is the gate: it requires a human approval before the OIDC token is minted.
+    # config pins owner + repo + workflow filename -- not the ref, not the job, and not the file
+    # contents. So a credential that can push a tag can reach the registry without transiting
+    # main-protection. This environment is the gate: it requires a human approval before the OIDC
+    # token is minted. It must sit on THIS job -- the token's `environment` claim comes from the
+    # job that declares it, and npm matches that claim against its config.
     # Add the same environment name to npm's trusted-publisher config -- that is the one control
     # enforced OUTSIDE this repository, so it still holds if the repository itself is compromised.
     environment: npm-publish
@@ -59,24 +133,32 @@ jobs:
       contents: read
       id-token: write # OIDC trusted publishing; there is no NPM_TOKEN secret
     steps:
-      # Checks out the release tag, not main — publish exactly what was released.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # No checkout and no install in the job that holds `id-token: write`: only first-party
+      # actions and npm itself run while the OIDC request credentials are in the environment.
+      # npm reads the manifest out of the tarball (`pacote.manifest` on a file spec), so this job
+      # needs no package.json, no lockfile and no node_modules on disk. That is also why it drops
+      # pnpm/action-setup and `cache: pnpm`: with no lockfile the cache step would fail.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          ref: ${{ github.event.release.tag_name }}
-      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+          name: npm-tarball
+
+      # download-artifact v8 already fails on a digest mismatch, but that digest is the artifact
+      # service's own record of what it stored. This checks the tarball against a value the build
+      # job computed before upload, so the two anchors are independent -- and a bad round-trip
+      # fails loudly here rather than silently publishing the wrong bytes.
+      - name: Verify the tarball crossed the job boundary unaltered
+        env:
+          EXPECTED_SHA256: ${{ needs.build.outputs.sha256 }}
+        run: echo "${EXPECTED_SHA256}  package.tgz" | sha256sum -c -
+
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: 24
-          cache: pnpm
           registry-url: 'https://registry.npmjs.org'
-      # KNOWN GAP, deliberately not closed here. M-2's remediation also called for holding
-      # `id-token: write` only in a job whose steps run over an already-built artifact. As written,
-      # install and build execute in the job that holds it, so ACTIONS_ID_TOKEN_REQUEST_URL/TOKEN
-      # are in scope for any dependency lifecycle script. pnpm 10 blocks those by default (verified
-      # against a malicious tarball during the audit), which is why this is a gap rather than a
-      # live hole -- but SHA-pinning closes the *actions* half of the supply chain, not this half.
-      # Closing it means splitting build and publish into two jobs with an artifact handoff, which
-      # can only be validated by a real release. Tracked as a follow-up, not forgotten.
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: npm publish --provenance --access public
+
+      # Splitting build out does not change a single field of the attestation. The SLSA predicate
+      # npm signs is assembled entirely from run-scoped environment variables -- GITHUB_WORKFLOW_REF,
+      # _REPOSITORY, _SERVER_URL, _EVENT_NAME, _REPOSITORY_ID, _REPOSITORY_OWNER_ID, _REF, _SHA,
+      # RUNNER_ENVIRONMENT, _RUN_ID, _RUN_ATTEMPT -- plus the SHA-512 of the tarball. Nothing
+      # job-scoped, no step list and no build inputs enter it.
+      - run: npm publish ./package.tgz --provenance --access public

@@ -46,16 +46,52 @@ jobs:
 
       - run: pnpm test:cov
 
+  # `npm pack` runs for real only at release time, in release.yml's `build` job, and a release is
+  # a bad place to discover it does not work: it is npm's packer reading a pnpm-installed tree,
+  # and a change to `files`, to tsconfig's outDir, or to the build itself can quietly empty the
+  # tarball without failing anything else. Publishing a pre-packed tarball also means npm skips
+  # `prepublishOnly`, so nothing downstream of pack would notice. This job runs the same command
+  # on every PR and asserts the tarball actually contains the shipped entry point.
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Pack and inspect the tarball a release would publish
+        run: |
+          mkdir -p "${RUNNER_TEMP}/pack"
+          npm pack --silent --pack-destination "${RUNNER_TEMP}/pack"
+          mv "${RUNNER_TEMP}"/pack/*.tgz package.tgz
+          tar tzf package.tgz > "${RUNNER_TEMP}/contents.txt"
+          cat "${RUNNER_TEMP}/contents.txt"
+          grep -qx 'package/package.json' "${RUNNER_TEMP}/contents.txt"
+          grep -qx 'package/dist/cli.js' "${RUNNER_TEMP}/contents.txt"
+
   # Required status check for `main`. Keep this job id exactly `test`.
   test:
-    needs: test-matrix
+    needs: [test-matrix, package]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Verify every matrix leg passed
+      - name: Verify every required job passed
         run: |
           echo "test-matrix result: ${{ needs.test-matrix.result }}"
+          echo "package result: ${{ needs.package.result }}"
           [ "${{ needs.test-matrix.result }}" = "success" ]
+          [ "${{ needs.package.result }}" = "success" ]
 
   # Reports, never gates. Deliberately NOT a dependency of `test`, and deliberately always exit 0.
   #
