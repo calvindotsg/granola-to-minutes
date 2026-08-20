@@ -62,7 +62,7 @@ It runs weekly, on every push to `main`, and on demand. The push trigger is load
 
 Use [Conventional Commits v1.0.0](https://www.conventionalcommits.org/) with required scope:
 
-```
+```text
 <type>(<scope>): <subject>
 ```
 
@@ -79,7 +79,7 @@ Use [Conventional Commits v1.0.0](https://www.conventionalcommits.org/) with req
 
 **Examples:**
 
-```
+```text
 feat(src): add meeting deduplication by ID
 fix(src): correct timezone offset for DST transitions
 test(src): add edge case tests for slug generation
@@ -87,6 +87,9 @@ docs(root): update README with new CLI options
 chore(repo): update biome to v3
 ci(github): add Node 22 to test matrix
 ```
+
+The same format applies to your **PR title**, which matters more than the individual commits
+— see [Pull Requests](#pull-requests) for why.
 
 ## Pull Requests
 
@@ -96,6 +99,30 @@ The `main` branch is protected by a [repository ruleset](https://github.com/calv
 2. Make your changes with tests
 3. Push and open a PR targeting `main`
 4. The **test** CI job must pass before merge
-5. Merge using any strategy (merge, squash, or rebase)
+5. Merge with **squash** — it is the only method enabled on this repository
 
 Direct pushes, force pushes, and branch deletion on `main` are blocked.
+
+### Squash is the only merge method, and that makes the PR title load-bearing
+
+Merge commits and rebase merges are disabled in the repository's settings, so
+`gh pr merge --merge` and `--rebase` fail with `405 Merge commits are not allowed on
+this repository`. Note that the ruleset linked above lists all three methods as allowed —
+that is not a contradiction to argue with. Repository settings decide which methods exist at
+all; a ruleset can only subtract from that set, never add to it. A method the settings
+disable stays disabled no matter what the ruleset says, so believe the settings.
+
+Because the squash commit takes its subject from the **PR title** (and its body from the PR
+description), the PR title is what actually lands on `main` — and therefore what
+release-please parses for the changelog and the version bump. So:
+
+- **The PR title must itself be a valid conventional commit**, scope included. A PR titled
+  "Fix the exporter" produces an unparseable commit on `main` and is silently dropped from
+  the changelog.
+- **The individual commits in your branch are collapsed and never reach the changelog.**
+  Splitting a branch into `feat(src)`, `test(src)`, and `docs(root)` commits is still good
+  for review, but only one of those types can survive the squash — pick the title that
+  describes the change as a whole, and pick the type that carries the largest bump.
+- A `BREAKING CHANGE:` footer must appear in the **PR description**, not only in a branch
+  commit, or the major bump is lost. On `0.x` see `bump-minor-pre-major` in
+  `release-please-config.json` before assuming what it will do.
