@@ -27,6 +27,11 @@ THE REVIEW
 EXIT CODES
     0 nothing needs Calvin, or he approved the head, or a local run; 1 needs Calvin and not approved on the
     head, or self-authored (CI); 2 cannot decide (bad base, unreadable event, API failure), which fails closed.
+
+THE BASE, when --base is not given
+    In Actions under a pull_request or pull_request_review event, HEAD must be GitHub's merge of the event's
+    head sha, and its first parent is the base; any other HEAD there exits 2. Everywhere else, the merge-base
+    with origin/main (else main). A branch head that merged main is never measured from its first parent.
 """
 
 from __future__ import annotations
@@ -89,17 +94,30 @@ SAFE_EMAIL = re.compile(r"(^noreply@(anthropic\.com|github\.com)|@users\.noreply
 
 
 def git(*args: str) -> str:
-    p = subprocess.run(["git", *args], capture_output=True, text=True)
+    # Bytes that are not UTF-8 (a font, a latin-1 file, an odd file name) must neither crash the run nor change:
+    # surrogateescape carries them through, so a path read here is the same path when it goes back to git (F7).
+    p = subprocess.run(["git", *args], capture_output=True, text=True, encoding="utf-8", errors="surrogateescape")
     if p.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)}: {p.stderr.strip()[:200]}")
     return p.stdout
 
 
 def default_base() -> str:
-    """GitHub's PR checkout is a merge commit whose first parent is the base; elsewhere, main's merge-base."""
-    parents = git("rev-list", "--parents", "-n", "1", "HEAD").split()
-    if len(parents) == 3:
-        return parents[1]
+    """GitHub's PR checkout is a merge commit whose first parent is the base and whose second is the PR head.
+    Only there is HEAD^1 the base: a branch head that merged main also has two parents, and its first is the
+    old branch tip (F12). So in Actions under a PR event, HEAD must be that merge of the event's head sha, or
+    the base cannot be decided; everywhere else it is main's merge-base."""
+    if os.environ.get("GITHUB_ACTIONS") == "true" and os.environ.get("GITHUB_EVENT_NAME") in (
+            "pull_request", "pull_request_review"):
+        try:
+            with open(os.environ["GITHUB_EVENT_PATH"]) as f:
+                head = json.load(f)["pull_request"]["head"]["sha"]
+        except (OSError, KeyError, TypeError, ValueError) as e:
+            raise RuntimeError(f"cannot read the PR head from the event ({type(e).__name__}): pass --base")
+        parents = git("rev-list", "--parents", "-n", "1", "HEAD").split()
+        if len(parents) == 3 and parents[2] == head:
+            return parents[1]
+        raise RuntimeError("HEAD is not GitHub's merge of this PR's head: pass --base")
     for ref in ("origin/main", "main"):
         try:
             return git("merge-base", ref, "HEAD").strip()
@@ -219,6 +237,8 @@ def review(approver: str) -> str:
 
 
 def main(argv: list[str]) -> int:
+    sys.stdout.reconfigure(errors="backslashreplace")   # such a path prints escaped, never as a crash (F7)
+    sys.stderr.reconfigure(errors="backslashreplace")
     base, memory, approver = None, [], "calvindotsg"
     i = 0
     while i < len(argv):
