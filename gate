@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# The merge gate: every merge-relevant check in this repo, one command (merge-on-green plan § 3.1, phase 3).
+#
+#   ./gate              run every check this machine can (local)
+#   GATE_RUNNER=linux   what the hosted Linux job runs (the shared workflow in calvindotsg/.github sets it)
+#   GATE_RUNNER=macos   what a hosted macOS job runs: nothing here needs macOS, so it counts no rows
+#
+# Last line: GATE <passed>/<total> failed=<n> notrun=<n> needs-calvin=<reason|none>
+# Exit 0 only with 0 failed, 0 not run, and nothing waiting on Calvin in CI.
+#
+# The rows wrap what test.yml's PR jobs run, with the same commands: test-matrix (pnpm install
+# --frozen-lockfile, pnpm check, pnpm build, pnpm test:cov) and package (npm pack, then the tarball must hold
+# package/package.json and package/dist/cli.js). `test` only fans those two in. A tool missing where a row
+# should run is "not run", and that fails the gate.
+#
+# Out, never counted:
+#   - test-matrix's other Node legs: CI runs Node 22, 24 and 26; the gate runs the node on PATH, once
+#     (the hosted job's setup-node picks it). The matrix stays in test.yml until phase 6 decides it.
+#   - test.yml `audit`: reports and never gates, by design (it always exits 0; see the comment on the job),
+#     and it reads the npm advisory database over the network.
+#   - contract-drift.yml: runs on schedule, push to main and dispatch, never on a PR, and fetches upstream
+#     over the network (CLAUDE.md: "a PR must never fail because of a network blip").
+#   - release.yml: release-please and npm publish, on push to main and release; post-merge.
+# macOS bash 3.2: no mapfile, no associative arrays.
+
+set -u
+cd "$(dirname "$0")" || exit 2
+
+RUNNER="${GATE_RUNNER:-local}"
+case "$RUNNER" in
+  linux|macos|local) ;;
+  *) echo "gate: GATE_RUNNER must be linux, macos or unset (got $RUNNER)" >&2; exit 2 ;;
+esac
+PY=python3
+
+LOG="$(mktemp -d "${TMPDIR:-/tmp}/gate.XXXXXX")" || exit 2
+trap 'rm -rf "$LOG"' EXIT
+passed=0 failed=0 notrun=0 n=0
+needs="none"
+
+# applies <platforms>: true when this run includes a check for those platforms ("linux macos", "macos", ...).
+applies() {
+  case "$RUNNER" in
+    local) [ "$(uname -s)" = Darwin ] && return 0   # a Mac runs all; a Linux machine runs the Linux checks
+           case " $1 " in *" linux "*) return 0 ;; *) return 1 ;; esac ;;
+    *) case " $1 " in *" $RUNNER "*) return 0 ;; *) return 1 ;; esac ;;
+  esac
+}
+
+# check <name> <platforms> <tool> <command...>: run one check and tally it.
+check() {
+  local name="$1" where="$2" tool="$3"; shift 3
+  applies "$where" || return 0
+  n=$((n + 1))
+  if [ -n "$tool" ] && ! command -v "$tool" > /dev/null 2>&1; then
+    notrun=$((notrun + 1)); echo "notrun $name ($tool not found)"; return 0
+  fi
+  local t0=$SECONDS
+  if "$@" > "$LOG/$n" 2>&1; then
+    passed=$((passed + 1)); echo "ok     $name ($((SECONDS - t0)) s)"
+  else
+    failed=$((failed + 1)); echo "FAIL   $name ($((SECONDS - t0)) s)"; tail -20 "$LOG/$n" | sed 's/^/       /'
+  fi
+}
+
+# A suite's exit code alone can pass a run that tested nothing, so a suite passes only with exit 0 AND its own
+# passing summary. vitest prints a trailer after its summary (Start at, Duration, then the coverage table), so
+# the line read is vitest's final "Tests" summary, not the last line: "Tests  N passed (N)" with N > 0 and
+# nothing failed or skipped. "Test Files  N passed (N)" must hold too.
+SUM_TESTS='^Tests +([1-9][0-9]*) passed \(([0-9]+)\)$'
+SUM_FILES='^Test Files +([1-9][0-9]*) passed \(([0-9]+)\)$'
+summary_ok() { # summary_ok <regex> <line>: the line matches and its two counts agree
+  [[ $2 =~ $1 ]] && [ "${BASH_REMATCH[1]}" = "${BASH_REMATCH[2]}" ]
+}
+suite() { # suite <command...>: run it, then require exit 0 and vitest's passing summary lines
+  "$@" > "$LOG/suite" 2>&1; local rc=$? tests files
+  cat "$LOG/suite"
+  [ "$rc" = 0 ] || return 1
+  # Strip colour codes and leading blanks; take the last of each summary line.
+  sed -e $'s/\033\\[[0-9;]*m//g' -e 's/^[[:space:]]*//' "$LOG/suite" > "$LOG/suite.plain"
+  tests="$(grep -E '^Tests ' "$LOG/suite.plain" | tail -1)"
+  files="$(grep -E '^Test Files ' "$LOG/suite.plain" | tail -1)"
+  summary_ok "$SUM_TESTS" "$tests" && summary_ok "$SUM_FILES" "$files" || {
+    echo "gate: exit 0 but no passing summary line (Tests: ${tests:-none}; Test Files: ${files:-none})"; return 1; }
+}
+
+# The CI job installs with the lockfile frozen; so does the gate, once, before the rows that need it.
+install() { CI=true pnpm install --frozen-lockfile; }
+# Biome's contract is its exit status (non-zero on any lint or format error).
+lint() { pnpm check; }
+# tsc's contract is its exit status (non-zero on any type error); it writes dist/, which `package` packs.
+build() { pnpm build; }
+# Same as test.yml's package job, which uses npm's packer on purpose (it is what release.yml publishes with).
+package() {
+  mkdir -p "$LOG/pack" && npm pack --silent --pack-destination "$LOG/pack" || return 1
+  tar tzf "$LOG"/pack/*.tgz > "$LOG/contents" || return 1
+  cat "$LOG/contents"
+  grep -qx 'package/package.json' "$LOG/contents" && grep -qx 'package/dist/cli.js' "$LOG/contents"
+}
+rules_pinned() { [ "$("$PY" -c 'import hashlib, sys; print(hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest())' scripts/gate/gate-rules.py)" = "$(cut -d' ' -f1 scripts/gate/gate-rules.sha256)" ]; }
+
+check "pnpm install --frozen-lockfile" "linux" pnpm    install
+check "pnpm check (biome)"             "linux" pnpm    lint
+check "pnpm build (tsc)"               "linux" pnpm    build
+check "pnpm test:cov (vitest)"         "linux" pnpm    suite pnpm test:cov
+check "npm pack holds dist/cli.js"     "linux" npm     package
+check "gate-rules.py matches its pin"  "linux" "$PY"   rules_pinned
+
+# The needs-Calvin rules (plan § 3.4). Run only when the vendored copy matches its pin.
+if applies linux; then
+  n=$((n + 1))
+  if ! command -v "$PY" > /dev/null 2>&1; then
+    notrun=$((notrun + 1)); echo "notrun needs-calvin rules ($PY not found)"
+  elif ! rules_pinned; then
+    notrun=$((notrun + 1)); echo "notrun needs-calvin rules (scripts/gate/gate-rules.py differs from its pin)"
+  else
+    "$PY" scripts/gate/gate-rules.py > "$LOG/rules" 2>&1; rc=$?
+    line="$(grep '^needs-calvin=' "$LOG/rules" | tail -1)"
+    case "$rc" in
+      0) passed=$((passed + 1)); echo "ok     needs-calvin rules ($line)" ;;
+      1) passed=$((passed + 1)); echo "ok     needs-calvin rules, waiting on Calvin ($line)" ;;
+      *) failed=$((failed + 1)); echo "FAIL   needs-calvin rules (cannot decide)" ;;
+    esac
+    sed 's/^/       /' "$LOG/rules"
+    reason="${line#needs-calvin=}"; reason="${reason% review=*}"
+    [ -n "$line" ] && [ "$reason" != none ] && needs="$reason"
+    [ "$rc" = 1 ] && rules_block=1
+  fi
+fi
+
+echo "GATE $passed/$n failed=$failed notrun=$notrun needs-calvin=$needs"
+[ "$failed" = 0 ] && [ "$notrun" = 0 ] && [ "${rules_block:-0}" = 0 ]

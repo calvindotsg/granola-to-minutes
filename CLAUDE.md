@@ -13,6 +13,7 @@ New to the codebase? Start with [Architecture](#architecture), then read [Implem
 | Test | `pnpm test:cov` |
 | Format | `pnpm format` |
 | Run | `node dist/cli.js export` |
+| Merge gate | `./gate` (every PR check in one run; last line `GATE <passed>/<total> failed=<n> notrun=<n> needs-calvin=<reason\|none>`, exit 0 only when green) |
 
 ## Architecture
 
