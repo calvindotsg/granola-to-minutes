@@ -13,6 +13,9 @@ THE RULES (each is "needs Calvin" when it fires)
     deleted   the change deletes a tracked file
     lines     over 1,000 changed lines, memory files excluded
     memory    over 20 memory files changed (a sweep)
+    binaries  (informational, never fires) a binary file in the change is listed with its size at HEAD, or
+              "deleted". Git counts a binary as 0 lines, so the lines rule cannot see it; there is no limit.
+              Only the path and the byte count are printed, never contents.
     scan      an added line carries a secret's shape, or an email, phone number or chat id that the base
               tree does not already hold. The hit is named by file, line and kind; its value is never printed.
 
@@ -146,14 +149,22 @@ def rules(base: str, memory: list[str]) -> list[tuple[str, str]]:
         hits.append(("deleted", f"deletes {len(deleted)} tracked file(s)"))
 
     lines = mem = 0
+    binaries = []
     for row in git("diff", "--numstat", "-z", "--no-renames", base, "HEAD").split("\0"):
         if not row:
             continue
         add, rm, path = row.split("\t", 2)
+        if add == "-" and rm == "-":
+            try:
+                size = f"{int(git('cat-file', '-s', f'HEAD:{path}').strip())} bytes"
+            except (RuntimeError, ValueError):
+                size = "deleted"
+            binaries.append(f"rule binaries: {path} {size}")
         if is_memory(path, memory):
             mem += 1
             continue
         lines += (int(add) if add.isdigit() else 0) + (int(rm) if rm.isdigit() else 0)
+    print("\n".join(binaries + [f"rule binaries: {len(binaries)} binary file(s), listed with no limit"]))
     print(f"rule lines: {lines} changed outside memory (limit {MAX_LINES})")
     if lines > MAX_LINES:
         hits.append(("lines", f"{lines} changed lines"))
