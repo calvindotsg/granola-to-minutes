@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.5.4](https://github.com/calvindotsg/granola-to-minutes/compare/v0.5.3...v0.5.4) (2026-10-26)
+
+
+### Documentation
+
+* **root:** record the Node 20 runner deadline behind the two release-path action bumps ([#53](https://github.com/calvindotsg/granola-to-minutes/issues/53)) ([6720459](https://github.com/calvindotsg/granola-to-minutes/commit/6720459c5268fae59a5095369e9b5718e1684f60))
+
+
+### Miscellaneous
+
+* **gate:** add ./gate, one command for every PR check ([#67](https://github.com/calvindotsg/granola-to-minutes/issues/67)) ([7b12044](https://github.com/calvindotsg/granola-to-minutes/commit/7b12044488d4a337bbebcb3b874bc681c7c6feca))
+* **gate:** vendor gate-rules 2a549f9 (F12 base, F7 bytes) ([#68](https://github.com/calvindotsg/granola-to-minutes/issues/68)) ([ab1e71c](https://github.com/calvindotsg/granola-to-minutes/commit/ab1e71c43b0656ce22a92528d9f9bf8928ec3746))
+* **gate:** vendor gate-rules 86ac4f7 (binary files listed with their size) ([#69](https://github.com/calvindotsg/granola-to-minutes/issues/69)) ([c726aa3](https://github.com/calvindotsg/granola-to-minutes/commit/c726aa3d8271a06f16de765f02279534a9f4ac71))
+
+
+### CI/CD
+
+* **deps:** bump actions/create-github-app-token from 2.2.2 to 3.2.0 ([#44](https://github.com/calvindotsg/granola-to-minutes/issues/44)) ([7f894b0](https://github.com/calvindotsg/granola-to-minutes/commit/7f894b086e2adb479c71093c3e2a841f5ccf28a6))
+* **deps:** bump googleapis/release-please-action from 4.4.1 to 5.0.0 ([ff4ff8d](https://github.com/calvindotsg/granola-to-minutes/commit/ff4ff8ded21aec605359c480c7307bfb197918cb))
+
 ## [0.5.3](https://github.com/calvindotsg/granola-to-minutes/compare/v0.5.2...v0.5.3) (2026-08-20)
 
 
