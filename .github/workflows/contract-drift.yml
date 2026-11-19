@@ -30,7 +30,9 @@ permissions:
   issues: write
 
 concurrency:
-  group: contract-drift
+  # A dry run waits in a group of its own: a group holds one waiting run, and a newly queued run
+  # cancels it, so a shared group would let a dry run cancel a waiting real one.
+  group: contract-drift${{ (github.event_name == 'workflow_dispatch' && toJSON(inputs.dry_run) != 'false') && '-dry-run' || '' }}
   cancel-in-progress: false
 
 jobs:
