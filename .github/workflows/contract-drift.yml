@@ -19,13 +19,20 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Check for drift but open or update no issue. Set false for a real run."
+        type: boolean
+        default: true
 
 permissions:
   contents: read
   issues: write
 
 concurrency:
-  group: contract-drift
+  # A dry run waits in a group of its own: a group holds one waiting run, and a newly queued run
+  # cancels it, so a shared group would let a dry run cancel a waiting real one.
+  group: contract-drift${{ (github.event_name == 'workflow_dispatch' && toJSON(inputs.dry_run) != 'false') && '-dry-run' || '' }}
   cancel-in-progress: false
 
 jobs:
@@ -65,8 +72,15 @@ jobs:
       # silently leave `existing` empty and open a duplicate issue on every drift run.
       #
       # The `contract-drift` label must exist -- `gh issue create --label` errors on a missing one.
+      # A hand start is a dry run unless it sets dry_run=false. toJSON() keeps a missing input
+      # from passing as false; schedule and push runs have no inputs and always write.
+      - name: Note dry run
+        if: steps.drift.outputs.status == '1' && github.event_name == 'workflow_dispatch' && toJSON(inputs.dry_run) != 'false'
+        run: |
+          echo "::notice::Dry run: drift found, but no issue opened or updated."
+
       - name: Open or update the drift issue
-        if: steps.drift.outputs.status == '1'
+        if: steps.drift.outputs.status == '1' && (github.event_name != 'workflow_dispatch' || toJSON(inputs.dry_run) == 'false')
         env:
           GH_TOKEN: ${{ github.token }}
           TITLE: "Minutes frontmatter contract has drifted upstream"

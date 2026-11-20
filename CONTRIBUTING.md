@@ -56,7 +56,7 @@ Then update the version, date, and SHA-256 in [`tests/contract/PROVENANCE.md`](.
 node scripts/check-contract-drift.mjs   # exit 0 in sync, 1 drift, 2 upstream unreachable
 ```
 
-It runs weekly, on every push to `main`, and on demand. The push trigger is load-bearing: **GitHub disables scheduled workflows on public repos after 60 days of repository inactivity**, and this repo has gone quiet that long before. If that happens, GitHub shows a banner on the Actions tab — re-enable the workflow from there.
+It runs weekly, on every push to `main`, and on demand. A start by hand is a dry run: it reports drift but opens no issue unless you pass `-f dry_run=false`. The push trigger is load-bearing: **GitHub disables scheduled workflows on public repos after 60 days of repository inactivity**, and this repo has gone quiet that long before. If that happens, GitHub shows a banner on the Actions tab — re-enable the workflow from there.
 
 ## Commit Conventions
 
