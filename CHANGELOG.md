@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.5.4](https://github.com/calvindotsg/granola-to-minutes/compare/v0.5.3...v0.5.4) (2026-11-28)
+
+
+### Documentation
+
+* **root:** document --output-dir and the exit codes ([#75](https://github.com/calvindotsg/granola-to-minutes/issues/75)) ([4add3ca](https://github.com/calvindotsg/granola-to-minutes/commit/4add3ca34507d1d1693e9e499c628030cddd9405))
+* **root:** record the Node 20 runner deadline behind the two release-path action bumps ([#53](https://github.com/calvindotsg/granola-to-minutes/issues/53)) ([6720459](https://github.com/calvindotsg/granola-to-minutes/commit/6720459c5268fae59a5095369e9b5718e1684f60))
+
+
+### Miscellaneous
+
+* **deps-dev:** bump the dev-dependencies group across 1 directory with 6 updates ([#60](https://github.com/calvindotsg/granola-to-minutes/issues/60)) ([9c7f502](https://github.com/calvindotsg/granola-to-minutes/commit/9c7f5022ae4d21bf327a0171fe25782dd492e1dc))
+* **deps-dev:** bump vite from 8.2.2 to 8.2.4 ([#66](https://github.com/calvindotsg/granola-to-minutes/issues/66)) ([50bb8d6](https://github.com/calvindotsg/granola-to-minutes/commit/50bb8d632eb692f31839aab86b11106a3ac89587))
+* **deps:** bump commander from 15.0.0 to 15.1.0 ([#70](https://github.com/calvindotsg/granola-to-minutes/issues/70)) ([d324363](https://github.com/calvindotsg/granola-to-minutes/commit/d324363d45401ae9892574d4cbb3f87b1743ac2c))
+* **deps:** bump js-yaml from 3.15.1 to 5.4.2 ([#59](https://github.com/calvindotsg/granola-to-minutes/issues/59)) ([6616d5a](https://github.com/calvindotsg/granola-to-minutes/commit/6616d5ab8fc80b8df893128b324d72031e0c3517))
+* **gate:** add ./gate, one command for every PR check ([#67](https://github.com/calvindotsg/granola-to-minutes/issues/67)) ([7b12044](https://github.com/calvindotsg/granola-to-minutes/commit/7b12044488d4a337bbebcb3b874bc681c7c6feca))
+* **gate:** vendor gate-rules 2a549f9 (F12 base, F7 bytes) ([#68](https://github.com/calvindotsg/granola-to-minutes/issues/68)) ([ab1e71c](https://github.com/calvindotsg/granola-to-minutes/commit/ab1e71c43b0656ce22a92528d9f9bf8928ec3746))
+* **gate:** vendor gate-rules 86ac4f7 (binary files listed with their size) ([#69](https://github.com/calvindotsg/granola-to-minutes/issues/69)) ([c726aa3](https://github.com/calvindotsg/granola-to-minutes/commit/c726aa3d8271a06f16de765f02279534a9f4ac71))
+
+
+### CI/CD
+
+* **deps:** bump actions/create-github-app-token from 2.2.2 to 3.2.0 ([#44](https://github.com/calvindotsg/granola-to-minutes/issues/44)) ([7f894b0](https://github.com/calvindotsg/granola-to-minutes/commit/7f894b086e2adb479c71093c3e2a841f5ccf28a6))
+* **deps:** bump actions/create-github-app-token from 3.2.0 to 3.3.0 ([#62](https://github.com/calvindotsg/granola-to-minutes/issues/62)) ([958003c](https://github.com/calvindotsg/granola-to-minutes/commit/958003c86c0adc347ef145bf2241a88f53f95d8f))
+* **deps:** bump actions/download-artifact from 8.0.1 to 8.0.2 ([#63](https://github.com/calvindotsg/granola-to-minutes/issues/63)) ([748e744](https://github.com/calvindotsg/granola-to-minutes/commit/748e744e70e54fc72f2ae6faef33ccf959e595f0))
+* **deps:** bump actions/setup-node from 7.0.0 to 7.1.0 ([#65](https://github.com/calvindotsg/granola-to-minutes/issues/65)) ([1f6628c](https://github.com/calvindotsg/granola-to-minutes/commit/1f6628c9c4084594f80a00fc008740eb40b58d8d))
+* **deps:** bump actions/upload-artifact from 7.0.1 to 7.0.2 ([#64](https://github.com/calvindotsg/granola-to-minutes/issues/64)) ([274a535](https://github.com/calvindotsg/granola-to-minutes/commit/274a53560f00fd6989c11c8f8732f6266abbe342))
+* **deps:** bump googleapis/release-please-action from 4.4.1 to 5.0.0 ([ff4ff8d](https://github.com/calvindotsg/granola-to-minutes/commit/ff4ff8ded21aec605359c480c7307bfb197918cb))
+* **deps:** bump pnpm/action-setup from 6.0.10 to 6.1.0 ([#57](https://github.com/calvindotsg/granola-to-minutes/issues/57)) ([69159c5](https://github.com/calvindotsg/granola-to-minutes/commit/69159c576aa9a39f8ef8b1653f17e9a7e79b2dac))
+* **github:** make a hand start of contract-drift a dry run ([#71](https://github.com/calvindotsg/granola-to-minutes/issues/71)) ([80f3d93](https://github.com/calvindotsg/granola-to-minutes/commit/80f3d933f5318fd13f2abb524d21ffe3e3a8b8c9))
+
 ## [0.5.3](https://github.com/calvindotsg/granola-to-minutes/compare/v0.5.2...v0.5.3) (2026-08-20)
 
 
