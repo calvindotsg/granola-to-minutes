@@ -6,7 +6,7 @@
 [![last commit](https://img.shields.io/github/last-commit/calvindotsg/granola-to-minutes)](https://github.com/calvindotsg/granola-to-minutes/commits/main)
 [![license](https://img.shields.io/npm/l/granola-to-minutes)](./LICENSE)
 
-CLI migration tool that exports [Granola](https://granola.ai) meeting data — AI summaries, transcripts, and human notes — to [Minutes](https://github.com/silverstein/minutes)-native markdown with YAML frontmatter. Extracts structured action items and decisions via Claude. Designed for one-time bulk migration from Granola's server-side storage.
+CLI migration tool that exports [Granola](https://granola.ai) meeting data — AI summaries, transcripts, and human notes — to [Minutes](https://github.com/silverstein/minutes)-native markdown with YAML frontmatter. Extracts structured action items and decisions through the Claude Code CLI, if you have it. Designed for one-time bulk migration from Granola's server-side storage.
 
 ![granola-to-minutes demo](https://raw.githubusercontent.com/calvindotsg/granola-to-minutes/main/demo/demo.gif)
 
@@ -77,6 +77,9 @@ granola-to-minutes export --skip-llm
 # Single meeting by UUID (or a prefix of at least 4 characters)
 granola-to-minutes export --note-id <uuid>
 
+# Write somewhere other than ~/meetings/
+granola-to-minutes export --output-dir ~/notes/meetings
+
 # Only recent meetings
 granola-to-minutes export --since 2026-03-01
 
@@ -86,6 +89,17 @@ granola-to-minutes export --verbose
 # Machine-readable JSON output (for AI agents and scripts)
 granola-to-minutes export --json
 ```
+
+## Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Success |
+| `1` | granola-cli is not installed, or an unexpected error |
+| `2` | Granola sign-in failed |
+| `3` | A flag has a value it does not accept |
+| `4` | No meeting matches `--note-id` |
+| `130` | You stopped it with Ctrl-C |
 
 ## Commands Reference
 
